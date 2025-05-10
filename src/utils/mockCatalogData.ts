@@ -80,7 +80,7 @@ export const mockBooks: Book[] = [
     title: 'Project Hail Mary',
     author: 'Andy Weir',
     coverImage: 'https://m.media-amazon.com/images/I/91vw43HLQuL._AC_UF1000,1000_QL80_.jpg',
-    description: 'Ryland Grace is the sole survivor on a desperate, last-chance mission—and if he fails, humanity and the Earth itself will perish. Except that right now, he doesn't know that. He can't even remember his own name, let alone the nature of his assignment or how to complete it.',
+    description: "Ryland Grace is the sole survivor on a desperate, last-chance mission and if he fails, humanity and the Earth itself will perish. Except that right now, he doesn't know that. He can't even remember his own name, let alone the nature of his assignment or how to complete it.",
     pageCount: 496,
     publicationYear: 2021,
     publisher: 'Ballantine Books',
