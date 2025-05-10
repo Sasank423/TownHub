@@ -132,6 +132,13 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "notifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_reading_stats"
+            referencedColumns: ["user_id"]
+          },
         ]
       }
       profiles: {
@@ -140,6 +147,8 @@ export type Database = {
           email: string
           id: string
           name: string
+          notification_settings: string | null
+          reading_preferences: string[] | null
           role: Database["public"]["Enums"]["user_role"]
           updated_at: string
         }
@@ -148,6 +157,8 @@ export type Database = {
           email: string
           id: string
           name: string
+          notification_settings?: string | null
+          reading_preferences?: string[] | null
           role?: Database["public"]["Enums"]["user_role"]
           updated_at?: string
         }
@@ -156,6 +167,8 @@ export type Database = {
           email?: string
           id?: string
           name?: string
+          notification_settings?: string | null
+          reading_preferences?: string[] | null
           role?: Database["public"]["Enums"]["user_role"]
           updated_at?: string
         }
@@ -205,6 +218,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reservations_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_reading_stats"
+            referencedColumns: ["user_id"]
           },
         ]
       }
@@ -272,7 +292,14 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      user_reading_stats: {
+        Row: {
+          active_reservations: number | null
+          books_read: number | null
+          user_id: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       is_librarian_or_admin: {
