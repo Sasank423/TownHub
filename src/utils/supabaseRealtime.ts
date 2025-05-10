@@ -20,7 +20,8 @@ export const subscribeToTable = (
   // Create a channel with a unique name for this subscription
   const channel = supabase
     .channel(`public:${table}`)
-    .on('postgres_changes', 
+    .on(
+      'postgres_changes', 
       {
         event,
         schema: 'public',
@@ -59,7 +60,8 @@ export const subscribeToTableWithFilter = (
 ): RealtimeChannel => {
   const channel = supabase
     .channel(`public:${table}:${filter.column}:${filter.value}`)
-    .on('postgres_changes', 
+    .on(
+      'postgres_changes', 
       {
         event,
         schema: 'public',

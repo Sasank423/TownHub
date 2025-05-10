@@ -5,7 +5,7 @@ import { StatCard } from '../components/StatCard';
 import { ApprovalQueue } from '../components/ApprovalQueue';
 import { ActivityFeed } from '../components/ActivityFeed';
 import { ReservationHistory } from '../components/ReservationHistory';
-import { Book, Users, Calendar, Home, ArrowRight, ChevronDown, ChevronUp } from 'lucide-react';
+import { Book, Users, Calendar, Home, ArrowRight, ChevronDown, ChevronUp, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/custom-tabs';
 import { supabase } from '../integrations/supabase/client';
