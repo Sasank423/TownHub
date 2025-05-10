@@ -33,10 +33,41 @@ export const Navbar: React.FC = () => {
                 <Link to="/" className="text-foreground hover:text-primary transition-colors">
                   Home
                 </Link>
-                <Link to="/catalog" className="text-foreground hover:text-primary transition-colors flex items-center gap-1">
-                  <BookOpen className="h-4 w-4" />
-                  <span>Browse Books</span>
-                </Link>
+                {user?.role === 'librarian' ? (
+                  <Link 
+                    to="/add-books" 
+                    className="text-foreground hover:text-primary transition-colors flex items-center gap-1"
+                    onClick={(e) => {
+                      // Check if we're inside a form
+                      const target = e.target as HTMLElement;
+                      const form = target.closest('form');
+                      if (form) {
+                        e.preventDefault();
+                        window.location.href = '/add-books';
+                      }
+                    }}
+                  >
+                    <BookOpen className="h-4 w-4" />
+                    <span>Add Books</span>
+                  </Link>
+                ) : (
+                  <Link 
+                    to="/catalog" 
+                    className="text-foreground hover:text-primary transition-colors flex items-center gap-1"
+                    onClick={(e) => {
+                      // Check if we're inside a form
+                      const target = e.target as HTMLElement;
+                      const form = target.closest('form');
+                      if (form) {
+                        e.preventDefault();
+                        window.location.href = '/catalog';
+                      }
+                    }}
+                  >
+                    <BookOpen className="h-4 w-4" />
+                    <span>Browse Books</span>
+                  </Link>
+                )}
                 <Link to="/rooms" className="text-foreground hover:text-primary transition-colors flex items-center gap-1">
                   <Calendar className="h-4 w-4" />
                   <span>Rooms</span>

@@ -8,7 +8,7 @@ import { ReservationHistory } from '../components/ReservationHistory';
 import { Book, Users, Calendar, Home, ArrowRight, ChevronDown, ChevronUp } from 'lucide-react';
 import { getStatistics } from '../utils/mockData';
 import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/custom-tabs';
 
 const LibrarianDashboard = () => {
   const stats = getStatistics();

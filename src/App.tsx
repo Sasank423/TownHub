@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
+import { PreventFormSubmission } from "./components/PreventFormSubmission";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import ForgotPassword from "./pages/ForgotPassword";
@@ -20,6 +21,7 @@ import NotFound from "./pages/NotFound";
 import Analytics from "./pages/Analytics";
 import Profile from "./pages/Profile";
 import ReportIssue from "./pages/ReportIssue";
+import AddBooks from "./pages/AddBooks";
 
 const queryClient = new QueryClient();
 
@@ -36,8 +38,20 @@ const ProtectedRoute = ({ element, requiredRole }: { element: React.ReactNode, r
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
   
+  // Only redirect if the user's role doesn't match the required role
+  // AND we're not already on a page that matches their role
   if (requiredRole && user.role !== requiredRole) {
-    return <Navigate to={user.role === 'librarian' ? '/librarian' : '/member'} replace />;
+    const currentPath = location.pathname;
+    const userHomePath = user.role === 'librarian' ? '/librarian' : '/member';
+    
+    // Check if we're already on a path that's appropriate for the user's role
+    // This prevents unnecessary redirects when navigating within role-specific pages
+    const isAlreadyOnRolePage = (user.role === 'librarian' && currentPath.includes('librarian')) || 
+                              (user.role === 'member' && currentPath.includes('member'));
+    
+    if (!isAlreadyOnRolePage) {
+      return <Navigate to={userHomePath} replace />;
+    }
   }
   
   return <>{element}</>;
@@ -56,6 +70,7 @@ const AppRoutes = () => {
       
       {/* Librarian routes */}
       <Route path="/librarian" element={<ProtectedRoute element={<LibrarianDashboard />} requiredRole="librarian" />} />
+      <Route path="/add-books" element={<ProtectedRoute element={<AddBooks />} requiredRole="librarian" />} />
       
       {/* Book routes */}
       <Route path="/catalog" element={<ProtectedRoute element={<Catalog />} />} />
@@ -89,9 +104,11 @@ const App = () => (
       <ThemeProvider>
         <BrowserRouter>
           <AuthProvider>
-            <Toaster />
-            <Sonner />
-            <AppRoutes />
+            <PreventFormSubmission>
+              <Toaster />
+              <Sonner />
+              <AppRoutes />
+            </PreventFormSubmission>
           </AuthProvider>
         </BrowserRouter>
       </ThemeProvider>

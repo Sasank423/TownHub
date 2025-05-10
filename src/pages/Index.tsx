@@ -85,83 +85,56 @@ const Index = () => {
         </div>
 
         <div className="container mx-auto px-4 relative z-10">
-          <div className="grid md:grid-cols-2 gap-12 items-center">
-            <div className="space-y-6 fade-slide-in">
-              <h1 className="text-4xl lg:text-5xl font-bold leading-tight text-balance text-foreground">
-                Be Part of the <span className="text-accent">Solution</span>
-              </h1>
-              <p className="text-lg text-foreground/80 max-w-lg">
-                Browse, reserve, and manage your library resources with ease. 
-                TownBook brings your local library experience online.
-              </p>
-              <div className="space-y-4">
-                <div className="flex items-center">
-                  <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-primary/20 text-primary mr-3">
-                    <svg viewBox="0 0 24 24" fill="none" className="w-4 h-4">
-                      <path d="M5 13l4 4L19 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                  </span>
-                  <span>Track the status of your borrowed books</span>
-                </div>
-                <div className="flex items-center">
-                  <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-primary/20 text-primary mr-3">
-                    <svg viewBox="0 0 24 24" fill="none" className="w-4 h-4">
-                      <path d="M5 13l4 4L19 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                  </span>
-                  <span>Receive updates when books are available</span>
-                </div>
-                <div className="flex items-center">
-                  <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-primary/20 text-primary mr-3">
-                    <svg viewBox="0 0 24 24" fill="none" className="w-4 h-4">
-                      <path d="M5 13l4 4L19 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                  </span>
-                  <span>Reserve study rooms and resources</span>
-                </div>
-                <div className="flex items-center">
-                  <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-primary/20 text-primary mr-3">
-                    <svg viewBox="0 0 24 24" fill="none" className="w-4 h-4">
-                      <path d="M5 13l4 4L19 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                  </span>
-                  <span>Engage with your local community</span>
-                </div>
+          <div className="max-w-2xl mx-auto space-y-6 fade-slide-in">
+            <h1 className="text-4xl lg:text-5xl font-bold leading-tight text-balance text-foreground text-center">
+              Be Part of the <span className="text-accent">Solution</span>
+            </h1>
+            <p className="text-lg text-foreground/80 text-center">
+              Browse, reserve, and manage your library resources with ease. 
+              TownBook brings your local library experience online.
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-xl mx-auto">
+              <div className="flex items-center">
+                <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-primary/20 text-primary mr-3">
+                  <svg viewBox="0 0 24 24" fill="none" className="w-4 h-4">
+                    <path d="M5 13l4 4L19 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </span>
+                <span>Track the status of your borrowed books</span>
               </div>
-              <div className="flex flex-wrap gap-4 pt-4">
-                <Button 
-                  size="lg" 
-                  className="gap-2 bg-primary text-primary-foreground"
-                  onClick={() => navigate('/login')}
-                >
-                  Join Our Platform <ArrowRight size={18} />
-                </Button>
+              <div className="flex items-center">
+                <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-primary/20 text-primary mr-3">
+                  <svg viewBox="0 0 24 24" fill="none" className="w-4 h-4">
+                    <path d="M5 13l4 4L19 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </span>
+                <span>Receive updates when books are available</span>
+              </div>
+              <div className="flex items-center">
+                <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-primary/20 text-primary mr-3">
+                  <svg viewBox="0 0 24 24" fill="none" className="w-4 h-4">
+                    <path d="M5 13l4 4L19 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </span>
+                <span>Reserve study rooms and resources</span>
+              </div>
+              <div className="flex items-center">
+                <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-primary/20 text-primary mr-3">
+                  <svg viewBox="0 0 24 24" fill="none" className="w-4 h-4">
+                    <path d="M5 13l4 4L19 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </span>
+                <span>Engage with your local community</span>
               </div>
             </div>
-            
-            <div className="justify-self-center lg:justify-self-end fade-slide-in-delayed">
-              <div className="gradient-border-top bg-card p-6 rounded-lg shadow-lg max-w-md">
-                <div className="flex justify-center mb-6">
-                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10">
-                    <Book className="h-8 w-8 text-primary" />
-                  </div>
-                </div>
-                <h2 className="text-2xl font-semibold text-center mb-2">Welcome Back!</h2>
-                <p className="text-center text-muted-foreground mb-6">
-                  You're successfully logged in
-                </p>
-                <p className="text-center mb-8">
-                  Thank you for being part of our community. You can now browse books and track their progress.
-                </p>
-                <div className="flex gap-3 justify-center">
-                  <Button variant="outline" className="border-primary text-primary hover:bg-primary hover:text-primary-foreground">
-                    My Reports
-                  </Button>
-                  <Button className="bg-primary text-primary-foreground">
-                    Report an Issue
-                  </Button>
-                </div>
-              </div>
+            <div className="flex flex-wrap gap-4 pt-4 justify-center">
+              <Button 
+                size="lg" 
+                className="gap-2 bg-primary text-primary-foreground"
+                onClick={() => navigate('/login')}
+              >
+                Join Our Platform <ArrowRight size={18} />
+              </Button>
             </div>
           </div>
         </div>

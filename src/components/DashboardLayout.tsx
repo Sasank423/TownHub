@@ -2,7 +2,7 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { ThemeToggle } from './ThemeToggle';
+import { Navbar } from './Navbar';
 import { BookOpen, BarChart2, FileText, Calendar } from 'lucide-react';
 
 interface DashboardLayoutProps {
@@ -32,44 +32,8 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Navbar inspired by the image */}
-      <nav className="border-b border-border bg-background">
-        <div className="container mx-auto px-4">
-          <div className="flex h-16 items-center justify-between">
-            <div className="flex items-center">
-              <Link to="/" className="flex items-center text-primary font-bold text-xl">
-                <span className="mr-2">TownBook</span>
-              </Link>
-              
-              <div className="hidden md:flex ml-10 space-x-8">
-                <Link to="/" className="text-foreground hover:text-primary px-3 py-2 text-sm font-medium">
-                  Home
-                </Link>
-                <Link to="/catalog" className="text-foreground hover:text-primary px-3 py-2 text-sm font-medium">
-                  <BookOpen className="inline mr-1 h-4 w-4" />
-                  Browse Books
-                </Link>
-                <Link to="/rooms" className="text-foreground hover:text-primary px-3 py-2 text-sm font-medium">
-                  <Calendar className="inline mr-1 h-4 w-4" />
-                  Rooms
-                </Link>
-                <Link to="/analytics" className="text-foreground hover:text-primary px-3 py-2 text-sm font-medium">
-                  <BarChart2 className="inline mr-1 h-4 w-4" />
-                  Analytics
-                </Link>
-                <Link to="/report-issue" className="text-foreground hover:text-primary px-3 py-2 text-sm font-medium">
-                  <FileText className="inline mr-1 h-4 w-4" />
-                  Report Issue
-                </Link>
-              </div>
-            </div>
-            
-            <div className="flex items-center space-x-4">
-              <ThemeToggle />
-            </div>
-          </div>
-        </div>
-      </nav>
+      {/* Use the Navbar component that includes the profile icon */}
+      <Navbar />
 
       <div className="container mx-auto px-4 py-8">
         <div className="flex items-center justify-between mb-8">
@@ -80,12 +44,12 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                   <React.Fragment key={index}>
                     {index > 0 && <span className="mx-2 text-muted-foreground">/</span>}
                     {crumb.path ? (
-                      <a 
-                        href={crumb.path} 
+                      <Link
+                        to={crumb.path}
                         className="text-muted-foreground hover:text-primary transition-colors"
                       >
                         {crumb.label}
-                      </a>
+                      </Link>
                     ) : (
                       <span className="text-foreground">{crumb.label}</span>
                     )}
