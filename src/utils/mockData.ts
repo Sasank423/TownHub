@@ -1,4 +1,3 @@
-
 export interface User {
   id: string;
   name: string;
@@ -39,7 +38,7 @@ export interface Reservation {
 export interface Notification {
   id: string;
   userId: string;
-  type: 'approval' | 'pickup' | 'due' | 'system';
+  type: 'approval' | 'pickup' | 'due' | 'system' | 'reminder' | 'event';
   message: string;
   date: string;
   read: boolean;
@@ -172,6 +171,30 @@ export const mockNotifications: Notification[] = [
     date: '2025-05-29T09:00',
     read: false,
   },
+  {
+    id: '4',
+    userId: '1',
+    type: 'reminder',
+    message: 'Your room reservation for "Study Room A" is tomorrow at 2:00 PM.',
+    date: '2025-05-11T09:15',
+    read: false,
+  },
+  {
+    id: '5',
+    userId: '1',
+    type: 'event',
+    message: 'New book club event: "Science Fiction Classics" is scheduled for May 20.',
+    date: '2025-05-08T11:30',
+    read: true,
+  },
+  {
+    id: '6',
+    userId: '2',
+    type: 'due',
+    message: '"Pride and Prejudice" is overdue by 2 days.',
+    date: '2025-05-05T09:00',
+    read: false,
+  },
 ];
 
 export const mockActivities: Activity[] = [
@@ -232,6 +255,26 @@ export const mockPendingReservations: Reservation[] = [
     startDate: '2025-05-20T10:00',
     endDate: '2025-05-20T12:00',
     title: 'Study Room A',
+  },
+  {
+    id: '5',
+    userId: '2',
+    itemId: '3',
+    itemType: 'book',
+    status: 'Pending',
+    startDate: '2025-05-21',
+    endDate: '2025-06-11',
+    title: 'The Great Gatsby',
+  },
+  {
+    id: '6',
+    userId: '4',
+    itemId: '2',
+    itemType: 'room',
+    status: 'Pending',
+    startDate: '2025-05-22T14:00',
+    endDate: '2025-05-22T16:00',
+    title: 'Conference Room B',
   },
 ];
 
