@@ -2,7 +2,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { Bell, Book, Calendar, LogOut, Search, User } from 'lucide-react';
+import { Bell, BookOpen, Calendar, BarChart2, FileText, LogOut, Search, User } from 'lucide-react';
 import { NotificationCenter } from './NotificationCenter';
 import { ThemeToggle } from './ThemeToggle';
 import { 
@@ -18,30 +18,36 @@ export const Navbar: React.FC = () => {
   const [unreadNotifications] = React.useState(2); // Hardcoded for demo, would be dynamic in a real app
 
   return (
-    <nav className="bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700 shadow-sm">
+    <nav className="bg-background border-b border-border">
       <div className="container mx-auto px-4">
         <div className="flex justify-between items-center py-4">
           <div className="flex items-center space-x-8">
-            <Link to="/" className="flex items-center space-x-2">
-              <img src="/logo.svg" alt="TownBook Logo" className="h-10" />
+            <Link to="/" className="flex items-center space-x-2 text-primary font-bold">
+              <img src="/logo.svg" alt="TownBook Logo" className="h-8" />
+              <span>TownBook</span>
             </Link>
             
             {user && (
               <div className="hidden md:flex items-center space-x-6">
-                <Link to="/" className="text-gray-600 hover:text-primary transition-colors dark:text-gray-300 dark:hover:text-primary">
+                <Link to="/" className="text-foreground hover:text-primary transition-colors">
                   Home
                 </Link>
-                <Link to="/catalog" className="text-gray-600 hover:text-primary transition-colors dark:text-gray-300 dark:hover:text-primary">
-                  Catalog
+                <Link to="/catalog" className="text-foreground hover:text-primary transition-colors flex items-center gap-1">
+                  <BookOpen className="h-4 w-4" />
+                  <span>Browse Books</span>
                 </Link>
-                <Link to="/rooms" className="text-gray-600 hover:text-primary transition-colors dark:text-gray-300 dark:hover:text-primary">
-                  Rooms
+                <Link to="/rooms" className="text-foreground hover:text-primary transition-colors flex items-center gap-1">
+                  <Calendar className="h-4 w-4" />
+                  <span>Rooms</span>
                 </Link>
-                {user.role === 'librarian' && (
-                  <Link to="/librarian" className="text-gray-600 hover:text-primary transition-colors dark:text-gray-300 dark:hover:text-primary">
-                    Management
-                  </Link>
-                )}
+                <Link to="/analytics" className="text-foreground hover:text-primary transition-colors flex items-center gap-1">
+                  <BarChart2 className="h-4 w-4" />
+                  <span>Analytics</span>
+                </Link>
+                <Link to="/report-issue" className="text-foreground hover:text-primary transition-colors flex items-center gap-1">
+                  <FileText className="h-4 w-4" />
+                  <span>Report Issue</span>
+                </Link>
               </div>
             )}
           </div>
@@ -49,21 +55,21 @@ export const Navbar: React.FC = () => {
           {user ? (
             <div className="flex items-center space-x-4">
               <button 
-                className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors relative"
+                className="p-2 rounded-full hover:bg-secondary transition-colors"
                 aria-label="Search"
               >
-                <Search size={20} className="text-gray-600 dark:text-gray-300" />
+                <Search size={20} className="text-foreground" />
               </button>
               
               <div className="relative">
                 <button 
-                  className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors relative"
+                  className="p-2 rounded-full hover:bg-secondary transition-colors"
                   onClick={() => setShowNotifications(!showNotifications)}
                   aria-label="Notifications"
                 >
-                  <Bell size={20} className="text-gray-600 dark:text-gray-300" />
+                  <Bell size={20} className="text-foreground" />
                   {unreadNotifications > 0 && (
-                    <span className="absolute top-0 right-0 bg-red-500 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full">
+                    <span className="absolute top-0 right-0 bg-primary text-primary-foreground text-xs w-5 h-5 flex items-center justify-center rounded-full">
                       {unreadNotifications}
                     </span>
                   )}
@@ -82,13 +88,13 @@ export const Navbar: React.FC = () => {
               
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button className="flex items-center space-x-2 p-2 rounded-full hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors">
-                    <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center">
-                      <span className="text-white font-semibold">
+                  <button className="flex items-center space-x-2 p-2 rounded-full hover:bg-secondary transition-colors">
+                    <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
+                      <span className="text-primary-foreground font-semibold">
                         {user.name.charAt(0)}
                       </span>
                     </div>
-                    <span className="hidden md:inline text-sm font-medium dark:text-white">
+                    <span className="hidden md:inline text-sm font-medium">
                       {user.name}
                     </span>
                   </button>
@@ -102,7 +108,7 @@ export const Navbar: React.FC = () => {
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
                     <Link to="/reservations" className="flex items-center space-x-2">
-                      <Book size={16} />
+                      <BookOpen size={16} />
                       <span>My Reservations</span>
                     </Link>
                   </DropdownMenuItem>
@@ -112,7 +118,7 @@ export const Navbar: React.FC = () => {
                       <span>Calendar</span>
                     </Link>
                   </DropdownMenuItem>
-                  <DropdownMenuItem className="text-red-500" onClick={logout}>
+                  <DropdownMenuItem className="text-destructive" onClick={logout}>
                     <div className="flex items-center space-x-2">
                       <LogOut size={16} />
                       <span>Logout</span>
@@ -130,13 +136,13 @@ export const Navbar: React.FC = () => {
               
               <Link 
                 to="/login" 
-                className="px-4 py-2 text-primary hover:text-primary/80 transition-colors dark:text-primary dark:hover:text-primary/80"
+                className="px-4 py-2 border border-primary text-primary hover:bg-primary hover:text-primary-foreground transition-colors rounded-md"
               >
                 Sign In
               </Link>
               <Link 
                 to="/login?tab=signup" 
-                className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90 transition-colors"
+                className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
               >
                 Sign Up
               </Link>

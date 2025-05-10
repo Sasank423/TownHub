@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import Index from "./pages/Index";
@@ -29,17 +29,35 @@ const App = () => (
           <Sonner />
           <BrowserRouter>
             <Routes>
+              {/* Public routes */}
               <Route path="/" element={<Index />} />
               <Route path="/login" element={<Login />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
+              
+              {/* Member routes */}
               <Route path="/member" element={<MemberDashboard />} />
+              
+              {/* Librarian routes */}
               <Route path="/librarian" element={<LibrarianDashboard />} />
+              
+              {/* Book routes */}
               <Route path="/catalog" element={<Catalog />} />
               <Route path="/books/:id" element={<BookDetails />} />
+              
+              {/* Room routes */}
               <Route path="/rooms" element={<Rooms />} />
               <Route path="/rooms/:id" element={<RoomDetails />} />
+              
+              {/* Reservation routes */}
               <Route path="/reserve/:type/:id" element={<ReservationWizard />} />
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              
+              {/* Analytics route */}
+              <Route path="/analytics" element={<Navigate to="/member" />} />
+              
+              {/* Report issue route */}
+              <Route path="/report-issue" element={<Navigate to="/member" />} />
+              
+              {/* Catch-all route */}
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
