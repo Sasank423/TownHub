@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -24,8 +23,8 @@ const Index = () => {
         <div className="container mx-auto px-4">
           <div className="flex h-16 items-center justify-between">
             <div className="flex items-center">
-              <Link to="/" className="flex items-center text-primary font-bold text-xl">
-                <span className="mr-2">TownBook</span>
+              <Link to="/" className="flex items-center font-bold text-xl">
+                <span className="mr-2 text-gradient-blue-green">TownBook</span>
               </Link>
               
               <div className="hidden md:flex ml-10 space-x-8">
@@ -86,8 +85,8 @@ const Index = () => {
 
         <div className="container mx-auto px-4 relative z-10">
           <div className="max-w-2xl mx-auto space-y-6 fade-slide-in">
-            <h1 className="text-4xl lg:text-5xl font-bold leading-tight text-balance text-foreground text-center">
-              Be Part of the <span className="text-accent">Solution</span>
+            <h1 className="text-4xl lg:text-5xl font-bold leading-tight text-balance text-center">
+              Be Part of the <span className="text-gradient-green-blue">Solution</span>
             </h1>
             <p className="text-lg text-foreground/80 text-center">
               Browse, reserve, and manage your library resources with ease. 

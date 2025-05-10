@@ -57,7 +57,18 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                 ))}
               </div>
             )}
-            <h1 className="text-3xl font-semibold text-foreground">{title}</h1>
+            <h1 className="text-3xl font-semibold">
+              {title.includes('Welcome') ? (
+                <>
+                  {title.split(',')[0]}, 
+                  <span className="text-gradient-blue-green ml-1">
+                    {title.split(',')[1]}
+                  </span>
+                </>
+              ) : (
+                title
+              )}
+            </h1>
           </div>
         </div>
         

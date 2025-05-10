@@ -23,9 +23,9 @@ export const Navbar: React.FC = () => {
       <div className="container mx-auto px-4">
         <div className="flex justify-between items-center py-4">
           <div className="flex items-center space-x-8">
-            <Link to="/" className="flex items-center space-x-2 text-primary font-bold">
+            <Link to="/" className="flex items-center space-x-2 font-bold">
               <img src="/logo.svg" alt="TownBook Logo" className="h-8" />
-              <span>TownBook</span>
+              <span className="text-gradient-blue-green">TownBook</span>
             </Link>
             
             {user && (

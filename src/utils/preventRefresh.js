@@ -1,61 +1,26 @@
-/**
- * This script prevents page refreshes when clicking on links or buttons within forms.
- * It should be imported and executed once at the application bootstrap.
- */
 
-// Function to initialize the page refresh prevention
-export function initPreventRefresh() {
-  // Wait for DOM to be fully loaded
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', setupEventListeners);
-  } else {
-    setupEventListeners();
-  }
-}
-
-// Set up the event listeners
-function setupEventListeners() {
-  // Capture clicks at the document level
-  document.addEventListener('click', handleClick, true);
-  
-  // Capture form submissions
-  document.addEventListener('submit', handleSubmit, true);
-}
-
-// Handle click events
-function handleClick(event) {
-  const target = event.target;
-  
-  // Find if we're inside a form
-  const form = target.closest('form');
-  if (!form) return;
-  
-  // Find if we clicked a link or a non-submit button
-  const link = target.closest('a');
-  const button = target.closest('button');
-  
-  if (link || (button && button.type !== 'submit')) {
-    // If it's a navigation element inside a form, prevent default form behavior
-    event.stopPropagation();
+export const initPreventRefresh = () => {
+  // This utility adds functionality to prevent page refreshes when clicking links inside forms
+  document.addEventListener('click', (event) => {
+    // Check if the clicked element is a link or inside a link
+    const linkElement = event.target.closest('a');
     
-    // If it's a link with href, handle navigation manually
-    if (link && link.href && !link.href.startsWith('javascript:')) {
-      event.preventDefault();
-      setTimeout(() => {
-        window.location.href = link.href;
-      }, 0);
+    if (linkElement) {
+      // Check if we're inside a form
+      const formElement = linkElement.closest('form');
+      
+      if (formElement) {
+        // Prevent default behavior (which would cause a page reload)
+        event.preventDefault();
+        
+        // Extract the href from the link
+        const href = linkElement.getAttribute('href');
+        
+        // If a proper href exists, navigate programmatically
+        if (href && !href.startsWith('#') && !href.startsWith('javascript:')) {
+          window.location.href = href;
+        }
+      }
     }
-  }
-}
-
-// Handle form submissions
-function handleSubmit(event) {
-  // Only allow form submission from explicit submit buttons or form.submit() calls
-  const submitter = event.submitter;
-  
-  // If the submission wasn't triggered by a submit button, prevent it
-  if (!submitter || submitter.type !== 'submit') {
-    event.preventDefault();
-    event.stopPropagation();
-  }
-}
+  });
+};

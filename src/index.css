@@ -124,6 +124,17 @@
   .wave-animation {
     animation: wave 4s ease-in-out infinite;
   }
+  
+  /* New gradient text classes for TownBook and Solution */
+  .text-gradient-blue-green {
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(90deg, #0EA5E9 0%, #4ADE80 100%);
+  }
+  
+  .text-gradient-green-blue {
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(90deg, #4ADE80 0%, #0EA5E9 100%);
+  }
 }
 
 /* Custom animations */
