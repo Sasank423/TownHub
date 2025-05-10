@@ -17,14 +17,19 @@ export const subscribeToTable = (
   event: PostgresChangeEvent = '*',
   callback: (payload: any) => void
 ): RealtimeChannel => {
-  const channel = supabase.channel(`public:${table}`)
-    .on('postgres_changes', {
-      event,
-      schema: 'public',
-      table
-    }, (payload) => {
-      callback(payload);
-    })
+  const channel = supabase
+    .channel(`public:${table}`)
+    .on(
+      'postgres_changes', 
+      {
+        event,
+        schema: 'public',
+        table
+      }, 
+      (payload) => {
+        callback(payload);
+      }
+    )
     .subscribe();
   
   return channel;
