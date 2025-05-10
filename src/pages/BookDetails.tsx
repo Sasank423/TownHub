@@ -1,6 +1,6 @@
 
-import React from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { DashboardLayout } from '../components/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -14,9 +14,44 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 const BookDetails = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [showModal, setShowModal] = React.useState(false);
+  const [showModal, setShowModal] = useState(false);
+  const [book, setBook] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
   
-  const book = id ? getBookById(id) : undefined;
+  useEffect(() => {
+    const loadBook = async () => {
+      if (id) {
+        setLoading(true);
+        try {
+          const bookData = await getBookById(id);
+          setBook(bookData || null);
+        } catch (error) {
+          console.error("Error loading book:", error);
+        } finally {
+          setLoading(false);
+        }
+      }
+    };
+    
+    loadBook();
+  }, [id]);
+  
+  if (loading) {
+    return (
+      <DashboardLayout 
+        title="Loading..." 
+        breadcrumbs={[
+          { label: 'Dashboard', path: '/member' },
+          { label: 'Catalog', path: '/catalog' },
+          { label: 'Loading...' }
+        ]}
+      >
+        <div className="flex items-center justify-center h-64">
+          <p>Loading book details...</p>
+        </div>
+      </DashboardLayout>
+    );
+  }
   
   if (!book) {
     return (
@@ -40,9 +75,9 @@ const BookDetails = () => {
     );
   }
   
-  const availableCopiesCount = book.copies.filter(c => c.status === 'available').length;
-  const reservedCopiesCount = book.copies.filter(c => c.status === 'reserved').length;
-  const checkedOutCopiesCount = book.copies.filter(c => c.status === 'checked-out').length;
+  const availableCopiesCount = book.copies.filter((c: any) => c.status === 'available').length;
+  const reservedCopiesCount = book.copies.filter((c: any) => c.status === 'reserved').length;
+  const checkedOutCopiesCount = book.copies.filter((c: any) => c.status === 'checked-out').length;
   
   const getStatusColor = (status: BookStatus) => {
     switch (status) {

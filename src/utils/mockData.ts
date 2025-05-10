@@ -1,311 +1,96 @@
-export interface User {
-  id: string;
-  name: string;
-  email: string;
-  role: 'member' | 'librarian';
-  membershipStatus: 'Active' | 'Pending' | 'Expired';
-  joinDate: string;
-}
 
-export interface Book {
-  id: string;
-  title: string;
-  author: string;
-  coverImage: string;
-  status: 'Available' | 'Reserved' | 'Checked Out';
-  dueDate?: string;
-}
+// This file now re-exports methods from our service files
+// but provides compatibility with existing code
 
-export interface Room {
-  id: string;
-  name: string;
-  capacity: number;
-  features: string[];
-  status: 'Available' | 'Reserved';
-}
+import { User, Book, Room, Reservation, Notification, Activity } from '../types/models';
+import * as UserService from '../services/userService';
+import * as BookService from '../services/bookService';
+import * as RoomService from '../services/roomService';
+import * as ReservationService from '../services/reservationService';
+import * as NotificationService from '../services/notificationService';
+import { supabase } from '../integrations/supabase/client';
 
-export interface Reservation {
-  id: string;
-  userId: string;
-  itemId: string;
-  itemType: 'book' | 'room';
-  status: 'Pending' | 'Approved' | 'Declined' | 'Completed';
-  startDate: string;
-  endDate: string;
-  title: string;
-}
+// Empty arrays for backward compatibility
+export const mockUsers: User[] = [];
+export const mockBooks: Book[] = [];
+export const mockRooms: Room[] = [];
+export const mockReservations: Reservation[] = [];
+export const mockNotifications: Notification[] = [];
+export const mockPendingReservations: Reservation[] = [];
 
-export interface Notification {
-  id: string;
-  userId: string;
-  type: 'approval' | 'pickup' | 'due' | 'system' | 'reminder' | 'event';
-  message: string;
-  date: string;
-  read: boolean;
-}
+// Empty mock activities - would need a new service
+export const mockActivities: Activity[] = [];
 
-export interface Activity {
-  id: string;
-  type: 'reservation' | 'return' | 'approval' | 'new_item' | 'new_member';
-  user: string;
-  details: string;
-  date: string;
-}
-
-export const mockUsers: User[] = [
-  {
-    id: '1',
-    name: 'John Doe',
-    email: 'john@example.com',
-    role: 'member',
-    membershipStatus: 'Active',
-    joinDate: '2024-01-15',
-  },
-  {
-    id: '2',
-    name: 'Jane Smith',
-    email: 'jane@example.com',
-    role: 'librarian',
-    membershipStatus: 'Active',
-    joinDate: '2023-05-20',
-  },
-];
-
-export const mockBooks: Book[] = [
-  {
-    id: '1',
-    title: 'The Great Gatsby',
-    author: 'F. Scott Fitzgerald',
-    coverImage: 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?q=80&w=200&auto=format',
-    status: 'Available',
-  },
-  {
-    id: '2',
-    title: 'To Kill a Mockingbird',
-    author: 'Harper Lee',
-    coverImage: 'https://images.unsplash.com/photo-1541963463532-d68292c34b19?q=80&w=200&auto=format',
-    status: 'Reserved',
-  },
-  {
-    id: '3',
-    title: '1984',
-    author: 'George Orwell',
-    coverImage: 'https://images.unsplash.com/photo-1543002588-bfa74002ed7e?q=80&w=200&auto=format',
-    status: 'Checked Out',
-    dueDate: '2025-06-01',
-  },
-];
-
-export const mockRooms: Room[] = [
-  {
-    id: '1',
-    name: 'Study Room A',
-    capacity: 4,
-    features: ['Whiteboard', 'Power Outlets', 'Wi-Fi'],
-    status: 'Available',
-  },
-  {
-    id: '2',
-    name: 'Conference Room B',
-    capacity: 10,
-    features: ['Projector', 'Video Conferencing', 'Whiteboard'],
-    status: 'Reserved',
-  },
-];
-
-export const mockReservations: Reservation[] = [
-  {
-    id: '1',
-    userId: '1',
-    itemId: '3',
-    itemType: 'book',
-    status: 'Approved',
-    startDate: '2025-05-15',
-    endDate: '2025-06-01',
-    title: '1984',
-  },
-  {
-    id: '2',
-    userId: '1',
-    itemId: '2',
-    itemType: 'room',
-    status: 'Approved',
-    startDate: '2025-05-12T14:00',
-    endDate: '2025-05-12T16:00',
-    title: 'Conference Room B',
-  },
-  {
-    id: '3',
-    userId: '1',
-    itemId: '2',
-    itemType: 'book',
-    status: 'Pending',
-    startDate: '2025-05-18',
-    endDate: '2025-06-08',
-    title: 'To Kill a Mockingbird',
-  },
-];
-
-export const mockNotifications: Notification[] = [
-  {
-    id: '1',
-    userId: '1',
-    type: 'approval',
-    message: 'Your reservation for "To Kill a Mockingbird" is pending approval.',
-    date: '2025-05-10T10:30',
-    read: false,
-  },
-  {
-    id: '2',
-    userId: '1',
-    type: 'pickup',
-    message: 'Your book "1984" is ready for pickup.',
-    date: '2025-05-13T14:15',
-    read: true,
-  },
-  {
-    id: '3',
-    userId: '1',
-    type: 'due',
-    message: '"1984" is due in 3 days.',
-    date: '2025-05-29T09:00',
-    read: false,
-  },
-  {
-    id: '4',
-    userId: '1',
-    type: 'reminder',
-    message: 'Your room reservation for "Study Room A" is tomorrow at 2:00 PM.',
-    date: '2025-05-11T09:15',
-    read: false,
-  },
-  {
-    id: '5',
-    userId: '1',
-    type: 'event',
-    message: 'New book club event: "Science Fiction Classics" is scheduled for May 20.',
-    date: '2025-05-08T11:30',
-    read: true,
-  },
-  {
-    id: '6',
-    userId: '2',
-    type: 'due',
-    message: '"Pride and Prejudice" is overdue by 2 days.',
-    date: '2025-05-05T09:00',
-    read: false,
-  },
-];
-
-export const mockActivities: Activity[] = [
-  {
-    id: '1',
-    type: 'reservation',
-    user: 'John Doe',
-    details: 'Reserved "The Great Gatsby"',
-    date: '2025-05-10T11:30',
-  },
-  {
-    id: '2',
-    type: 'approval',
-    user: 'Jane Smith',
-    details: 'Approved reservation for "1984"',
-    date: '2025-05-10T12:15',
-  },
-  {
-    id: '3',
-    type: 'new_member',
-    user: 'Admin',
-    details: 'New member Sarah Johnson joined',
-    date: '2025-05-09T15:45',
-  },
-  {
-    id: '4',
-    type: 'new_item',
-    user: 'Jane Smith',
-    details: 'Added 3 new books to the catalog',
-    date: '2025-05-09T10:30',
-  },
-  {
-    id: '5',
-    type: 'return',
-    user: 'Michael Brown',
-    details: 'Returned "Pride and Prejudice"',
-    date: '2025-05-08T16:20',
-  },
-];
-
-export const mockPendingReservations: Reservation[] = [
-  {
-    id: '3',
-    userId: '1',
-    itemId: '2',
-    itemType: 'book',
-    status: 'Pending',
-    startDate: '2025-05-18',
-    endDate: '2025-06-08',
-    title: 'To Kill a Mockingbird',
-  },
-  {
-    id: '4',
-    userId: '3',
-    itemId: '1',
-    itemType: 'room',
-    status: 'Pending',
-    startDate: '2025-05-20T10:00',
-    endDate: '2025-05-20T12:00',
-    title: 'Study Room A',
-  },
-  {
-    id: '5',
-    userId: '2',
-    itemId: '3',
-    itemType: 'book',
-    status: 'Pending',
-    startDate: '2025-05-21',
-    endDate: '2025-06-11',
-    title: 'The Great Gatsby',
-  },
-  {
-    id: '6',
-    userId: '4',
-    itemId: '2',
-    itemType: 'room',
-    status: 'Pending',
-    startDate: '2025-05-22T14:00',
-    endDate: '2025-05-22T16:00',
-    title: 'Conference Room B',
-  },
-];
-
-export const getStatistics = () => {
-  return {
-    totalBooks: 1243,
-    totalRooms: 12,
-    activeReservations: 57,
-    availableBooks: 876,
-    pendingApprovals: 8,
-    overdueItems: 5
-  };
+// Re-export functionalities with async implementations
+export const getUserReservations = async (userId: string): Promise<Reservation[]> => {
+  return await ReservationService.getUserReservations(userId);
 };
 
-export const login = (email: string, password: string): Promise<User | null> => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      const user = mockUsers.find(u => u.email === email);
-      if (user && password === 'password') {
-        resolve(user);
-      } else {
-        resolve(null);
-      }
-    }, 800);
-  });
+export const getUserNotifications = async (userId: string): Promise<Notification[]> => {
+  return await NotificationService.getUserNotifications(userId);
 };
 
-export const getUserReservations = (userId: string): Reservation[] => {
-  return mockReservations.filter(res => res.userId === userId);
+// Statistics function - would need to be implemented with real data
+export const getStatistics = async () => {
+  // In a real implementation, this would fetch from the database
+  try {
+    const { count: booksCount } = await supabase.from('books').select('*', { count: 'exact', head: true });
+    const { count: roomsCount } = await supabase.from('rooms').select('*', { count: 'exact', head: true });
+    const { count: activeReservationsCount } = await supabase
+      .from('reservations')
+      .select('*', { count: 'exact', head: true })
+      .not('status', 'in', '("Completed","Declined")');
+    const { count: availableBooksCount } = await supabase
+      .from('book_copies')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'available');
+    const { count: pendingApprovalsCount } = await supabase
+      .from('reservations')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'Pending');
+    const { count: overdueItemsCount } = await supabase
+      .from('reservations')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'Approved')
+      .lt('end_date', new Date().toISOString());
+
+    return {
+      totalBooks: booksCount || 0,
+      totalRooms: roomsCount || 0,
+      activeReservations: activeReservationsCount || 0,
+      availableBooks: availableBooksCount || 0,
+      pendingApprovals: pendingApprovalsCount || 0,
+      overdueItems: overdueItemsCount || 0
+    };
+  } catch (error) {
+    console.error("Error fetching statistics:", error);
+    return {
+      totalBooks: 0,
+      totalRooms: 0,
+      activeReservations: 0,
+      availableBooks: 0,
+      pendingApprovals: 0,
+      overdueItems: 0
+    };
+  }
 };
 
-export const getUserNotifications = (userId: string): Notification[] => {
-  return mockNotifications.filter(notif => notif.userId === userId);
+// Mock login replaced with real authentication
+export const login = async (email: string, password: string): Promise<User | null> => {
+  try {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password
+    });
+    
+    if (error || !data.user) {
+      console.error("Login error:", error);
+      return null;
+    }
+    
+    return await UserService.getUserById(data.user.id);
+  } catch (err) {
+    console.error("Login error:", err);
+    return null;
+  }
 };

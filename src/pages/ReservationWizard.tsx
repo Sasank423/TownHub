@@ -40,6 +40,7 @@ import {
 } from 'lucide-react';
 import { format, addDays } from 'date-fns';
 import { getBookById, getRoomById } from '../utils/mockCatalogData';
+import { createReservation } from '../services/reservationService';
 import { useAuth } from '../contexts/AuthContext';
 import { Reservation, ReservationType, Book as BookType, Room as RoomType } from '../types/models';
 
@@ -56,11 +57,35 @@ const ReservationWizard = () => {
   const initialStartTime = searchParams.get('start') || '';
   const initialEndTime = searchParams.get('end') || '';
   
-  // Get the item data
+  // State for item data
+  const [itemData, setItemData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  
+  // Get the item type
   const itemType = type === 'book' ? 'book' : 'room';
-  const itemData = itemType === 'book' 
-    ? getBookById(id || '')
-    : getRoomById(id || '');
+  
+  useEffect(() => {
+    const loadItem = async () => {
+      if (id) {
+        setLoading(true);
+        try {
+          let data;
+          if (itemType === 'book') {
+            data = await getBookById(id);
+          } else {
+            data = await getRoomById(id);
+          }
+          setItemData(data || null);
+        } catch (error) {
+          console.error(`Error loading ${itemType}:`, error);
+        } finally {
+          setLoading(false);
+        }
+      }
+    };
+    
+    loadItem();
+  }, [id, itemType]);
   
   // Wizard steps
   const [step, setStep] = useState(1);
@@ -77,6 +102,7 @@ const ReservationWizard = () => {
   
   // Confirmation dialog
   const [showConfirmation, setShowConfirmation] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   
   // Helper function to safely get item title/name
   const getItemTitle = () => {
@@ -89,19 +115,54 @@ const ReservationWizard = () => {
     }
   };
   
-  // Mock reservation data
-  const mockReservation: Reservation = {
-    id: `reservation-${Date.now()}`,
-    userId: user?.id || '',
-    itemId: id || '',
-    itemType: itemType as ReservationType,
-    title: getItemTitle(),
-    startDate: startDate.toISOString(),
-    endDate: endDate.toISOString(),
-    status: 'Pending',
-    notes,
-    createdAt: new Date().toISOString(),
+  // Handle form submission with real API call
+  const handleSubmit = async () => {
+    if (!user || !itemData) return;
+    
+    setSubmitting(true);
+    
+    try {
+      const result = await createReservation({
+        userId: user.id,
+        itemId: id || '',
+        itemType: itemType as ReservationType,
+        title: getItemTitle(),
+        startDate: itemType === 'book' 
+          ? startDate.toISOString() 
+          : `${format(startDate, 'yyyy-MM-dd')}T${startTime}`,
+        endDate: itemType === 'book' 
+          ? endDate.toISOString() 
+          : `${format(endDate, 'yyyy-MM-dd')}T${endTime}`,
+        notes: notes || undefined
+      });
+      
+      if (result) {
+        setShowConfirmation(true);
+        setIsComplete(true);
+      }
+    } catch (error) {
+      console.error("Error creating reservation:", error);
+    } finally {
+      setSubmitting(false);
+    }
   };
+  
+  if (loading) {
+    return (
+      <DashboardLayout 
+        title={`Loading ${itemType} details...`} 
+        breadcrumbs={[
+          { label: 'Dashboard', path: '/member' },
+          { label: itemType === 'book' ? 'Catalog' : 'Rooms', path: itemType === 'book' ? '/catalog' : '/rooms' },
+          { label: 'Loading...' }
+        ]}
+      >
+        <div className="flex items-center justify-center h-64">
+          <p>Loading {itemType} details...</p>
+        </div>
+      </DashboardLayout>
+    );
+  }
   
   if (!itemData) {
     return (

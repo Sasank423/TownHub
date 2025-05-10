@@ -1,13 +1,12 @@
-
-import React, { useState } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { DashboardLayout } from '../components/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
-import { format, parseISO } from 'date-fns';
+import { format } from 'date-fns';
 import { getRoomById } from '../utils/mockCatalogData';
 import { 
   ArrowLeft, 
@@ -15,9 +14,7 @@ import {
   Users, 
   MapPin, 
   Share2, 
-  Home,
-  ChevronLeft,
-  ChevronRight
+  Home
 } from 'lucide-react';
 import { 
   Carousel,
@@ -32,8 +29,43 @@ const RoomDetails = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [room, setRoom] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
   
-  const room = id ? getRoomById(id) : undefined;
+  useEffect(() => {
+    const loadRoom = async () => {
+      if (id) {
+        setLoading(true);
+        try {
+          const roomData = await getRoomById(id);
+          setRoom(roomData || null);
+        } catch (error) {
+          console.error("Error loading room:", error);
+        } finally {
+          setLoading(false);
+        }
+      }
+    };
+    
+    loadRoom();
+  }, [id]);
+  
+  if (loading) {
+    return (
+      <DashboardLayout 
+        title="Loading..." 
+        breadcrumbs={[
+          { label: 'Dashboard', path: '/member' },
+          { label: 'Rooms', path: '/rooms' },
+          { label: 'Loading...' }
+        ]}
+      >
+        <div className="flex items-center justify-center h-64">
+          <p>Loading room details...</p>
+        </div>
+      </DashboardLayout>
+    );
+  }
   
   if (!room) {
     return (
@@ -59,9 +91,9 @@ const RoomDetails = () => {
   
   // Get availability for the selected date
   const dateString = format(selectedDate, 'yyyy-MM-dd');
-  const availabilityForDate = room.availabilitySchedule.find(a => a.date === dateString);
+  const availabilityForDate = room.availabilitySchedule.find((a: any) => a.date === dateString);
   const timeSlots = availabilityForDate?.slots || [];
-  const availableSlots = timeSlots.filter(slot => slot.isAvailable);
+  const availableSlots = timeSlots.filter((slot: any) => slot.isAvailable);
   
   // Get formatted amenity names
   const formatAmenityName = (amenity: RoomAmenity): string => {
