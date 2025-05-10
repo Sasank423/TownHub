@@ -43,6 +43,7 @@ export const AuthForm: React.FC = () => {
     setError(null);
     
     try {
+      console.log("Login attempt with:", formData.email);
       await login(formData.email, formData.password);
       // Navigate will happen via the useEffect in Login.tsx
     } catch (err: any) {
@@ -115,12 +116,12 @@ export const AuthForm: React.FC = () => {
     setError(null);
     
     try {
-      // For demo purposes, we're using test accounts
-      if (role === 'member') {
-        await login('member@example.com', 'password123');
-      } else {
-        await login('librarian@example.com', 'password123');
-      }
+      // For demo purposes, using test accounts
+      const email = role === 'member' ? 'member@example.com' : 'librarian@example.com';
+      const password = 'password123';
+      
+      console.log(`Demo login for ${role} role:`, email);
+      await login(email, password);
       // Navigation will be handled by useEffect in Login.tsx
     } catch (err: any) {
       console.error("Demo login error:", err);

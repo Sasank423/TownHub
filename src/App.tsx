@@ -17,6 +17,9 @@ import Rooms from "./pages/Rooms";
 import RoomDetails from "./pages/RoomDetails";
 import ReservationWizard from "./pages/ReservationWizard";
 import NotFound from "./pages/NotFound";
+import Analytics from "./pages/Analytics";
+import Profile from "./pages/Profile";
+import ReportIssue from "./pages/ReportIssue";
 
 const queryClient = new QueryClient();
 
@@ -66,10 +69,13 @@ const AppRoutes = () => {
       <Route path="/reserve/:type/:id" element={<ProtectedRoute element={<ReservationWizard />} />} />
       
       {/* Analytics route */}
-      <Route path="/analytics" element={<Navigate to="/member" />} />
+      <Route path="/analytics" element={<ProtectedRoute element={<Analytics />} />} />
+      
+      {/* Profile route */}
+      <Route path="/profile" element={<ProtectedRoute element={<Profile />} />} />
       
       {/* Report issue route */}
-      <Route path="/report-issue" element={<Navigate to="/member" />} />
+      <Route path="/report-issue" element={<ProtectedRoute element={<ReportIssue />} />} />
       
       {/* Catch-all route */}
       <Route path="*" element={<NotFound />} />

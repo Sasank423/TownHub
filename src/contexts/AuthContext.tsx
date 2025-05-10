@@ -67,7 +67,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .eq('id', userId)
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching user profile:', error);
+        return;
+      }
 
       if (data) {
         setUser(prev => {
@@ -85,12 +88,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setLoading(true);
       setError(null);
       
+      console.log(`Attempting login for: ${email}`);
+      
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
       
-      if (error) throw error;
+      if (error) {
+        console.error("Login error:", error.message);
+        throw error;
+      }
       
       // Success case - the onAuthStateChange handler will update the user state
       console.log("Login successful:", data.user?.email);
@@ -100,6 +108,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (err: any) {
       setError(err.message || 'An error occurred during login');
       console.error("Login error:", err);
+      toast.error(`Login failed: ${err.message || 'An error occurred'}`);
       throw err; // Re-throw to let components handle the error
     } finally {
       setLoading(false);
@@ -108,11 +117,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = async () => {
     try {
+      setLoading(true);
       await supabase.auth.signOut();
       toast.success('You have been logged out');
     } catch (err: any) {
       console.error('Logout error:', err);
       toast.error('Failed to log out');
+    } finally {
+      setLoading(false);
     }
   };
 
