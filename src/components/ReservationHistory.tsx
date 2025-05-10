@@ -1,6 +1,5 @@
-
 import React, { useState } from 'react';
-import { Book, Home, History, BarcodeScan, Check, AlertCircle, Clock, Calendar } from 'lucide-react';
+import { Book, Home, History, Barcode, Check, AlertCircle, Clock, Calendar } from 'lucide-react';
 import { format } from 'date-fns';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -176,7 +175,7 @@ export const ReservationHistory: React.FC = () => {
       <div className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-100 dark:border-slate-700 p-5">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-medium flex items-center dark:text-white">
-            <BarcodeScan className="mr-2 h-5 w-5 text-primary" />
+            <Barcode className="mr-2 h-5 w-5 text-primary" />
             Returns Processing
           </h2>
         </div>
@@ -196,7 +195,7 @@ export const ReservationHistory: React.FC = () => {
             {isProcessing ? (
               <Clock className="h-4 w-4 mr-2 animate-spin" />
             ) : (
-              <BarcodeScan className="h-4 w-4 mr-2" />
+              <Barcode className="h-4 w-4 mr-2" />
             )}
             Process Return
           </Button>
