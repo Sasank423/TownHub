@@ -17,6 +17,7 @@ export const subscribeToTable = (
   event: PostgresChangeEvent = '*',
   callback: (payload: any) => void
 ): RealtimeChannel => {
+  // Create a channel with a unique name for this subscription
   const channel = supabase
     .channel(`public:${table}`)
     .on(
@@ -26,9 +27,7 @@ export const subscribeToTable = (
         schema: 'public',
         table
       }, 
-      (payload) => {
-        callback(payload);
-      }
+      callback
     )
     .subscribe();
   
