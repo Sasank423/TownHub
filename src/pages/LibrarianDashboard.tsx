@@ -9,6 +9,7 @@ import { Book, Users, Calendar, Home, ArrowRight, ChevronDown, ChevronUp, Clock 
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/custom-tabs';
 import { supabase } from '../integrations/supabase/client';
+import { getPendingBookRequests } from '../utils/supabaseRealtime';
 
 const LibrarianDashboard = () => {
   const [stats, setStats] = useState({

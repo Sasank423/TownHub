@@ -119,7 +119,7 @@ const MemberDashboard = () => {
             )}
           </div>
 
-          {/* Pending Approvals */}
+          {/* Pending Approvals - FIXED DARK THEME STYLING */}
           <div className="bg-card rounded-lg shadow-sm border border-border p-5">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-lg font-medium flex items-center text-foreground">
@@ -127,7 +127,7 @@ const MemberDashboard = () => {
                 Pending Approvals
               </h2>
               {pendingReservations.length > 0 && (
-                <span className="bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 text-xs font-medium px-2.5 py-0.5 rounded-full">
+                <span className="bg-amber-900/30 text-amber-300 dark:bg-amber-900/30 dark:text-amber-300 text-xs font-medium px-2.5 py-0.5 rounded-full">
                   {pendingReservations.length} pending
                 </span>
               )}

@@ -1,8 +1,6 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { CheckCircle, Book, Home, Clock, X, Search, Filter, CalendarRange } from 'lucide-react';
-import { mockPendingReservations } from '../utils/mockData';
-import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -15,56 +13,179 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { getPendingBookRequests, updateReservationStatus } from '../utils/supabaseRealtime';
+import { subscribeToTable, unsubscribe } from '../utils/supabaseRealtime';
+import { RealtimeChannel } from '@supabase/supabase-js';
 
 export const ApprovalQueue: React.FC = () => {
-  const [pendingReservations, setPendingReservations] = React.useState(mockPendingReservations);
+  const [pendingReservations, setPendingReservations] = useState([]);
   const [selectedReservations, setSelectedReservations] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [dateFilter, setDateFilter] = useState<string>('all');
+  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
-  const handleApprove = (id: string) => {
-    setPendingReservations(prev => prev.filter(res => res.id !== id));
-    toast({
-      title: "Reservation approved",
-      description: "The reservation has been approved successfully.",
+  // Fetch pending reservations and set up real-time listeners
+  useEffect(() => {
+    let channel: RealtimeChannel | null = null;
+
+    const loadPendingRequests = async () => {
+      try {
+        setLoading(true);
+        // Get pending book requests
+        const requests = await getPendingBookRequests();
+        console.log("Pending requests:", requests);
+        
+        const formattedRequests = requests.map(req => ({
+          id: req.reservations?.id || '',
+          activityId: req.id,
+          userId: req.user_id,
+          title: req.reservations?.title || req.description,
+          itemType: req.item_type || 'book',
+          startDate: req.reservations?.start_date || new Date().toISOString(),
+          endDate: req.reservations?.end_date || '',
+          userName: req.user_name || `User #${req.user_id}`,
+          status: req.reservations?.status || 'Pending'
+        }));
+        
+        setPendingReservations(formattedRequests);
+      } catch (error) {
+        console.error("Error loading pending requests:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load pending requests",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    // Initial load
+    loadPendingRequests();
+
+    // Set up real-time subscription for activities
+    channel = subscribeToTable('activities', 'INSERT', (payload) => {
+      console.log("New activity:", payload);
+      if (payload.new && payload.new.action === 'reservation' && !payload.new.is_processed) {
+        loadPendingRequests();
+      }
     });
+
+    // Cleanup
+    return () => {
+      if (channel) unsubscribe(channel);
+    };
+  }, [toast]);
+
+  const handleApprove = async (id: string, activityId: string) => {
+    try {
+      const success = await updateReservationStatus(id, 'Approved', activityId);
+      if (success) {
+        setPendingReservations(prev => prev.filter(res => res.id !== id));
+        toast({
+          title: "Reservation approved",
+          description: "The reservation has been approved successfully.",
+        });
+      } else {
+        throw new Error("Failed to update reservation");
+      }
+    } catch (error) {
+      console.error("Error approving reservation:", error);
+      toast({
+        title: "Error",
+        description: "Failed to approve the reservation",
+        variant: "destructive",
+      });
+    }
   };
   
-  const handleDecline = (id: string) => {
-    setPendingReservations(prev => prev.filter(res => res.id !== id));
-    toast({
-      title: "Reservation declined",
-      description: "The reservation has been declined.",
-      variant: "destructive",
-    });
+  const handleDecline = async (id: string, activityId: string) => {
+    try {
+      const success = await updateReservationStatus(id, 'Declined', activityId);
+      if (success) {
+        setPendingReservations(prev => prev.filter(res => res.id !== id));
+        toast({
+          title: "Reservation declined",
+          description: "The reservation has been declined.",
+          variant: "destructive",
+        });
+      } else {
+        throw new Error("Failed to update reservation");
+      }
+    } catch (error) {
+      console.error("Error declining reservation:", error);
+      toast({
+        title: "Error",
+        description: "Failed to decline the reservation",
+        variant: "destructive",
+      });
+    }
   };
 
-  const handleBatchApprove = () => {
+  const handleBatchApprove = async () => {
     if (selectedReservations.length === 0) return;
     
-    setPendingReservations(prev => 
-      prev.filter(res => !selectedReservations.includes(res.id))
-    );
-    toast({
-      title: `${selectedReservations.length} reservations approved`,
-      description: "The selected reservations have been approved successfully.",
-    });
-    setSelectedReservations([]);
+    try {
+      // Find the selected reservations with their activity IDs
+      const toApprove = pendingReservations.filter(res => selectedReservations.includes(res.id));
+      
+      // Process each reservation
+      for (const res of toApprove) {
+        await updateReservationStatus(res.id, 'Approved', res.activityId);
+      }
+      
+      setPendingReservations(prev => 
+        prev.filter(res => !selectedReservations.includes(res.id))
+      );
+      
+      toast({
+        title: `${selectedReservations.length} reservations approved`,
+        description: "The selected reservations have been approved successfully.",
+      });
+      
+      setSelectedReservations([]);
+    } catch (error) {
+      console.error("Error in batch approval:", error);
+      toast({
+        title: "Error",
+        description: "Failed to process some approvals",
+        variant: "destructive",
+      });
+    }
   };
 
-  const handleBatchDecline = () => {
+  const handleBatchDecline = async () => {
     if (selectedReservations.length === 0) return;
     
-    setPendingReservations(prev => 
-      prev.filter(res => !selectedReservations.includes(res.id))
-    );
-    toast({
-      title: `${selectedReservations.length} reservations declined`,
-      description: "The selected reservations have been declined.",
-      variant: "destructive",
-    });
-    setSelectedReservations([]);
+    try {
+      // Find the selected reservations with their activity IDs
+      const toDecline = pendingReservations.filter(res => selectedReservations.includes(res.id));
+      
+      // Process each reservation
+      for (const res of toDecline) {
+        await updateReservationStatus(res.id, 'Declined', res.activityId);
+      }
+      
+      setPendingReservations(prev => 
+        prev.filter(res => !selectedReservations.includes(res.id))
+      );
+      
+      toast({
+        title: `${selectedReservations.length} reservations declined`,
+        description: "The selected reservations have been declined.",
+        variant: "destructive",
+      });
+      
+      setSelectedReservations([]);
+    } catch (error) {
+      console.error("Error in batch decline:", error);
+      toast({
+        title: "Error",
+        description: "Failed to process some declines",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleSelectReservation = (id: string) => {
@@ -86,15 +207,38 @@ export const ApprovalQueue: React.FC = () => {
   };
 
   const formatDate = (dateString: string) => {
-    if (dateString.includes('T')) {
-      return format(new Date(dateString), 'MMM d, h:mm a');
+    if (!dateString) return '';
+    
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) {
+        return 'Invalid date';
+      }
+      
+      if (dateString.includes('T')) {
+        return new Intl.DateTimeFormat('en-US', {
+          month: 'short',
+          day: 'numeric',
+          hour: 'numeric',
+          minute: '2-digit'
+        }).format(date);
+      }
+      
+      return new Intl.DateTimeFormat('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric'
+      }).format(date);
+    } catch (error) {
+      console.error("Error formatting date:", error);
+      return 'Invalid date';
     }
-    return format(new Date(dateString), 'MMM d, yyyy');
   };
 
   // Filter reservations based on search, type and date
   const filteredReservations = pendingReservations.filter(res => {
-    const matchesSearch = res.title.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSearch = res.title?.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                          res.userName?.toLowerCase().includes(searchQuery.toLowerCase());
     
     // Date filtering
     if (dateFilter === 'today') {
@@ -190,7 +334,11 @@ export const ApprovalQueue: React.FC = () => {
         </div>
       )}
 
-      {pendingReservations.length === 0 ? (
+      {loading ? (
+        <div className="flex items-center justify-center py-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-primary"></div>
+        </div>
+      ) : pendingReservations.length === 0 ? (
         <div className="text-center py-10">
           <CheckCircle className="mx-auto h-12 w-12 text-gray-300 dark:text-gray-600" />
           <h3 className="mt-2 text-lg font-medium text-gray-900 dark:text-gray-100">All caught up!</h3>
@@ -281,8 +429,8 @@ interface ReservationListProps {
   reservations: any[];
   selectedReservations: string[];
   onSelectReservation: (id: string) => void;
-  onApprove: (id: string) => void;
-  onDecline: (id: string) => void;
+  onApprove: (id: string, activityId: string) => void;
+  onDecline: (id: string, activityId: string) => void;
   formatDate: (date: string) => string;
 }
 
@@ -333,7 +481,7 @@ const ReservationList: React.FC<ReservationListProps> = ({
                     <Clock className="h-3.5 w-3.5 mr-1" />
                     <span>
                       {formatDate(reservation.startDate)}
-                      {reservation.itemType === 'book' && ` - ${formatDate(reservation.endDate)}`}
+                      {reservation.itemType === 'book' && reservation.endDate && ` - ${formatDate(reservation.endDate)}`}
                     </span>
                   </div>
                   <div className="mt-1 flex items-center">
@@ -341,21 +489,21 @@ const ReservationList: React.FC<ReservationListProps> = ({
                       {reservation.itemType === 'book' ? "Book" : "Room"}
                     </Badge>
                     <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">
-                      Requested by <span className="font-medium text-gray-700 dark:text-gray-300">User #{reservation.userId}</span>
+                      Requested by <span className="font-medium text-gray-700 dark:text-gray-300">{reservation.userName || `User #${reservation.userId}`}</span>
                     </span>
                   </div>
                 </div>
               </div>
               <div className="flex space-x-2">
                 <button 
-                  onClick={() => onDecline(reservation.id)}
+                  onClick={() => onDecline(reservation.id, reservation.activityId)}
                   className="p-2 text-gray-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 dark:hover:text-red-400 rounded-full transition-colors"
                   aria-label="Decline"
                 >
                   <X className="h-5 w-5" />
                 </button>
                 <button 
-                  onClick={() => onApprove(reservation.id)}
+                  onClick={() => onApprove(reservation.id, reservation.activityId)}
                   className="p-2 text-gray-500 hover:text-green-500 hover:bg-green-50 dark:hover:bg-green-900/20 dark:hover:text-green-400 rounded-full transition-colors"
                   aria-label="Approve"
                 >
