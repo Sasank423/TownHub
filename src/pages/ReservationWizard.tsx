@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { DashboardLayout } from '../components/DashboardLayout';
@@ -116,7 +115,7 @@ const ReservationWizard = () => {
   };
   
   // Handle form submission with real API call
-  const handleSubmit = async () => {
+  const handleSubmitReservation = async () => {
     if (!user || !itemData) return;
     
     setSubmitting(true);
@@ -640,8 +639,12 @@ const ReservationWizard = () => {
         </CardContent>
         <CardFooter>
           <div className="w-full flex flex-col gap-2">
-            <Button className="w-full" onClick={handleSubmit}>
-              Submit Reservation
+            <Button 
+              className="w-full" 
+              onClick={handleSubmitReservation}
+              disabled={submitting}
+            >
+              {submitting ? 'Submitting...' : 'Submit Reservation'}
             </Button>
             <Button variant="outline" className="w-full" onClick={() => setStep(prev => prev - 1)}>
               Go Back
@@ -709,7 +712,7 @@ const ReservationWizard = () => {
       </div>
       
       {/* Navigation buttons */}
-      {!isComplete && (
+      {!isComplete && step < 3 && (
         <div className="flex justify-between">
           <Button 
             variant="outline"
@@ -724,23 +727,13 @@ const ReservationWizard = () => {
             {step > 1 ? 'Previous' : 'Cancel'}
           </Button>
           
-          {step < totalSteps ? (
-            <Button 
-              onClick={() => setStep(prev => prev + 1)}
-              disabled={!isStepValid()}
-              className="gap-1"
-            >
-              Continue <ChevronRight size={16} />
-            </Button>
-          ) : (
-            <Button 
-              onClick={handleSubmit}
-              disabled={!isStepValid()}
-              className="gap-1"
-            >
-              Submit Reservation <Check size={16} />
-            </Button>
-          )}
+          <Button 
+            onClick={() => setStep(prev => prev + 1)}
+            disabled={!isStepValid()}
+            className="gap-1"
+          >
+            Continue <ChevronRight size={16} />
+          </Button>
         </div>
       )}
       

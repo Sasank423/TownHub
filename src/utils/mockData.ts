@@ -18,8 +18,11 @@ export const mockReservations: Reservation[] = [];
 export const mockNotifications: Notification[] = [];
 export const mockPendingReservations: Reservation[] = [];
 
-// Empty mock activities - would need a new service
+// Mock activities - would need a new service
 export const mockActivities: Activity[] = [];
+
+// Export the types for compatibility
+export type { User, Book, Room, Reservation, Notification, Activity };
 
 // Re-export functionalities with async implementations
 export const getUserReservations = async (userId: string): Promise<Reservation[]> => {

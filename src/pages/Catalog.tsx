@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { DashboardLayout } from '../components/DashboardLayout';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -22,10 +22,11 @@ import {
 import { Card, CardContent } from '@/components/ui/card';
 import { Book, BookStatus } from '../types/models';
 import { searchBooks, getAllGenres, getAvailableBookCopiesCount } from '../utils/mockCatalogData';
-import { LayoutList, LayoutGrid, Search, Filter, BookOpen } from 'lucide-react';
+import { LayoutList, LayoutGrid, Search, Filter, BookOpen, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const ITEMS_PER_PAGE = 12;
 
@@ -38,22 +39,55 @@ const Catalog = () => {
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [currentPage, setCurrentPage] = useState(1);
   const [showFilters, setShowFilters] = useState(false);
-
-  // Get all available genres
-  const allGenres = getAllGenres();
   
-  // Search and filter books
-  const filteredBooks = searchBooks(searchQuery, {
-    genres: selectedGenres.length > 0 ? selectedGenres : undefined,
-    availability: availability as BookStatus || undefined,
-    sortBy,
-    sortOrder
-  });
+  // State for async data
+  const [books, setBooks] = useState<Book[]>([]);
+  const [genres, setGenres] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [totalPages, setTotalPages] = useState(1);
+  const [paginatedBooks, setPaginatedBooks] = useState<Book[]>([]);
 
-  // Calculate pagination
-  const totalPages = Math.ceil(filteredBooks.length / ITEMS_PER_PAGE);
-  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-  const paginatedBooks = filteredBooks.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  // Load books and genres
+  useEffect(() => {
+    const loadData = async () => {
+      setLoading(true);
+      try {
+        // Load genres first as we need them for the filter UI
+        const genresData = await getAllGenres();
+        setGenres(genresData);
+        
+        // Then load books with filters
+        const booksData = await searchBooks(searchQuery, {
+          genres: selectedGenres.length > 0 ? selectedGenres : undefined,
+          availability: availability as BookStatus || undefined,
+          sortBy,
+          sortOrder
+        });
+        
+        setBooks(booksData);
+        
+        // Calculate pagination
+        const total = Math.ceil(booksData.length / ITEMS_PER_PAGE);
+        setTotalPages(total);
+        
+        // Ensure current page is valid
+        const validPage = Math.max(1, Math.min(currentPage, total));
+        if (validPage !== currentPage) {
+          setCurrentPage(validPage);
+        }
+        
+        // Calculate paginated books
+        const startIndex = (validPage - 1) * ITEMS_PER_PAGE;
+        setPaginatedBooks(booksData.slice(startIndex, startIndex + ITEMS_PER_PAGE));
+      } catch (error) {
+        console.error('Error loading catalog data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    loadData();
+  }, [searchQuery, selectedGenres, availability, sortBy, sortOrder, currentPage]);
   
   // Handle genre toggle
   const toggleGenre = (genre: string) => {
@@ -149,18 +183,26 @@ const Catalog = () => {
                 {/* Genre Filter */}
                 <div>
                   <h3 className="font-medium mb-2">Genres</h3>
-                  <div className="flex flex-wrap gap-2">
-                    {allGenres.map(genre => (
-                      <Badge
-                        key={genre}
-                        variant={selectedGenres.includes(genre) ? 'default' : 'outline'}
-                        className="cursor-pointer hover:bg-primary/90"
-                        onClick={() => toggleGenre(genre)}
-                      >
-                        {genre}
-                      </Badge>
-                    ))}
-                  </div>
+                  {loading ? (
+                    <div className="flex flex-wrap gap-2">
+                      {[1, 2, 3, 4, 5].map(i => (
+                        <Skeleton key={i} className="h-6 w-16" />
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="flex flex-wrap gap-2">
+                      {genres.map(genre => (
+                        <Badge
+                          key={genre}
+                          variant={selectedGenres.includes(genre) ? 'default' : 'outline'}
+                          className="cursor-pointer hover:bg-primary/90"
+                          onClick={() => toggleGenre(genre)}
+                        >
+                          {genre}
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 
                 {/* Availability Filter */}
@@ -241,12 +283,51 @@ const Catalog = () => {
         )}
         
         {/* Results Count */}
-        <div className="text-sm text-muted-foreground">
-          Showing {filteredBooks.length === 0 ? 0 : startIndex + 1} - {Math.min(startIndex + ITEMS_PER_PAGE, filteredBooks.length)} of {filteredBooks.length} books
-        </div>
+        {loading ? (
+          <Skeleton className="h-6 w-52" />
+        ) : (
+          <div className="text-sm text-muted-foreground">
+            Showing {books.length === 0 ? 0 : ((currentPage - 1) * ITEMS_PER_PAGE) + 1} - {Math.min(currentPage * ITEMS_PER_PAGE, books.length)} of {books.length} books
+          </div>
+        )}
         
         {/* Book Grid/List View */}
-        {paginatedBooks.length === 0 ? (
+        {loading ? (
+          <div className={`
+            ${view === 'grid' 
+              ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4'
+              : 'space-y-4'}
+          `}>
+            {Array.from({ length: 8 }).map((_, i) => (
+              <Card key={i}>
+                <div className={view === 'grid' ? 'aspect-[2/3]' : 'p-4 flex'}>
+                  {view === 'grid' ? (
+                    <Skeleton className="w-full h-full" />
+                  ) : (
+                    <>
+                      <Skeleton className="w-16 h-24 mr-4" />
+                      <div className="flex-1">
+                        <Skeleton className="h-6 w-3/4 mb-2" />
+                        <Skeleton className="h-4 w-1/2 mb-2" />
+                        <Skeleton className="h-16 w-full" />
+                      </div>
+                    </>
+                  )}
+                </div>
+                {view === 'grid' && (
+                  <CardContent className="p-4">
+                    <Skeleton className="h-5 w-3/4 mb-2" />
+                    <Skeleton className="h-4 w-1/2 mb-2" />
+                    <div className="mt-auto pt-2 flex gap-1">
+                      <Skeleton className="h-5 w-12" />
+                      <Skeleton className="h-5 w-12" />
+                    </div>
+                  </CardContent>
+                )}
+              </Card>
+            ))}
+          </div>
+        ) : paginatedBooks.length === 0 ? (
           <div className="text-center py-16">
             <BookOpen className="mx-auto h-12 w-12 text-muted-foreground" />
             <h3 className="mt-4 text-lg font-medium">No books found</h3>
@@ -278,7 +359,7 @@ const Catalog = () => {
         )}
         
         {/* Pagination */}
-        {totalPages > 1 && (
+        {!loading && totalPages > 1 && (
           <Pagination className="mt-8">
             <PaginationContent>
               <PaginationItem>
@@ -384,7 +465,23 @@ interface BookCardProps {
 }
 
 const BookCard: React.FC<BookCardProps> = ({ book, viewMode }) => {
-  const availableCopies = getAvailableBookCopiesCount(book.id);
+  const [availableCopies, setAvailableCopies] = useState<number>(0);
+  const [loading, setLoading] = useState(true);
+  
+  useEffect(() => {
+    const getAvailability = async () => {
+      try {
+        const count = await getAvailableBookCopiesCount(book.id);
+        setAvailableCopies(count);
+      } catch (error) {
+        console.error(`Error fetching availability for book ${book.id}:`, error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    getAvailability();
+  }, [book.id]);
   
   const getStatusColor = () => {
     if (availableCopies > 0) return 'bg-green-100 text-green-800';
@@ -395,6 +492,7 @@ const BookCard: React.FC<BookCardProps> = ({ book, viewMode }) => {
   };
   
   const getStatusText = () => {
+    if (loading) return "Loading...";
     if (availableCopies > 0) {
       return `${availableCopies} Available`;
     }
@@ -412,7 +510,7 @@ const BookCard: React.FC<BookCardProps> = ({ book, viewMode }) => {
               alt={`Cover of ${book.title}`}
               className="object-cover w-full h-full hover:scale-105 transition-transform duration-300"
             />
-            <div className={`absolute bottom-2 right-2 px-2 py-1 rounded text-xs font-medium ${getStatusColor()}`}>
+            <div className={`absolute bottom-2 right-2 px-2 py-1 rounded text-xs font-medium ${loading ? 'bg-gray-100 text-gray-800' : getStatusColor()}`}>
               {getStatusText()}
             </div>
           </div>
@@ -453,7 +551,7 @@ const BookCard: React.FC<BookCardProps> = ({ book, viewMode }) => {
               <h3 className="font-medium">{book.title}</h3>
               <p className="text-sm text-muted-foreground">by {book.author}</p>
             </div>
-            <div className={`px-2 py-1 h-fit rounded text-xs font-medium ${getStatusColor()}`}>
+            <div className={`px-2 py-1 h-fit rounded text-xs font-medium ${loading ? 'bg-gray-100 text-gray-800' : getStatusColor()}`}>
               {getStatusText()}
             </div>
           </div>

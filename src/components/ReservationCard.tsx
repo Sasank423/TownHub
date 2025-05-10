@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Book, Calendar, Home } from 'lucide-react';
-import { Reservation } from '../utils/mockData';
+import { Reservation } from '../types/models';
 import { format } from 'date-fns';
 
 interface ReservationCardProps {

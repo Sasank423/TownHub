@@ -1,331 +1,164 @@
 
 import React, { useState } from 'react';
-import { Bell, CheckCircle, Clock, X, Check, Calendar, AlertTriangle } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
-import { getUserNotifications } from '../utils/mockData';
+import { Bell } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { format } from 'date-fns';
 import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs";
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useAuth } from '../contexts/AuthContext';
+import { useNotifications } from '../hooks/useNotifications';
 
-interface NotificationCenterProps {
-  onClose: () => void;
-}
-
-export const NotificationCenter: React.FC<NotificationCenterProps> = ({ onClose }) => {
+export const NotificationCenter = () => {
   const { user } = useAuth();
-  const [notifications, setNotifications] = useState(user ? getUserNotifications(user.id) : []);
+  const [open, setOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('all');
-
-  const getIcon = (type: string) => {
-    switch (type) {
-      case 'approval':
-        return <CheckCircle size={18} className="text-blue-500 dark:text-blue-400" />;
-      case 'pickup':
-        return <Bell size={18} className="text-green-500 dark:text-green-400" />;
-      case 'due':
-        return <AlertTriangle size={18} className="text-amber-500 dark:text-amber-400" />;
-      case 'reminder':
-        return <Clock size={18} className="text-purple-500 dark:text-purple-400" />;
-      case 'event':
-        return <Calendar size={18} className="text-indigo-500 dark:text-indigo-400" />;
-      default:
-        return <Bell size={18} className="text-gray-500 dark:text-gray-400" />;
-    }
-  };
-
-  const handleMarkAsRead = (id: string) => {
-    setNotifications(prev => 
-      prev.map(notification => 
-        notification.id === id ? { ...notification, read: true } : notification
-      )
-    );
-  };
-
-  const handleMarkAllAsRead = () => {
-    setNotifications(prev => 
-      prev.map(notification => ({ ...notification, read: true }))
-    );
-  };
-
-  // Group notifications by date
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
   
-  const yesterday = new Date(today);
-  yesterday.setDate(yesterday.getDate() - 1);
+  // Use the notifications hook
+  const { 
+    notifications, 
+    unreadCount, 
+    markAsRead, 
+    markAllAsRead 
+  } = useNotifications(user?.id);
   
-  const thisWeekStart = new Date(today);
-  thisWeekStart.setDate(thisWeekStart.getDate() - thisWeekStart.getDay());
-
-  const groupedNotifications = notifications.reduce((acc: any, notification) => {
-    const notifDate = new Date(notification.date);
-    notifDate.setHours(0, 0, 0, 0);
-    
-    let group = 'earlier';
-    
-    if (notifDate.getTime() === today.getTime()) {
-      group = 'today';
-    } else if (notifDate.getTime() === yesterday.getTime()) {
-      group = 'yesterday';
-    } else if (notifDate > thisWeekStart) {
-      group = 'thisWeek';
-    }
-    
-    if (!acc[group]) {
-      acc[group] = [];
-    }
-    
-    acc[group].push(notification);
-    return acc;
-  }, {} as Record<string, typeof notifications>);
-
   // Filter notifications based on active tab
   const filteredNotifications = activeTab === 'all' 
     ? notifications 
-    : activeTab === 'unread'
-      ? notifications.filter(n => !n.read)
-      : notifications.filter(n => n.type === activeTab);
-
-  const unreadCount = notifications.filter(n => !n.read).length;
-
-  if (!user) return null;
-
+    : activeTab === 'unread' 
+        ? notifications.filter(n => !n.is_read)
+        : notifications.filter(n => n.is_read);
+  
   return (
-    <div className="bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-gray-200 dark:border-slate-700 overflow-hidden">
-      <div className="flex justify-between items-center p-4 border-b border-gray-200 dark:border-slate-700">
-        <h3 className="font-medium dark:text-white">Notifications</h3>
-        <button 
-          onClick={onClose} 
-          className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-          aria-label="Close notifications"
-        >
-          <X size={18} />
-        </button>
-      </div>
-      
-      <div>
-        <Tabs defaultValue="all" className="w-full" onValueChange={setActiveTab}>
-          <div className="border-b border-gray-200 dark:border-slate-700">
-            <TabsList className="flex">
-              <TabsTrigger className="flex-1 rounded-none" value="all">
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button variant="outline" size="icon" className="rounded-full relative">
+          <Bell className="h-5 w-5" />
+          {unreadCount > 0 && (
+            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+              {unreadCount > 9 ? '9+' : unreadCount}
+            </span>
+          )}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-80 p-0" align="end">
+        <div className="flex items-center justify-between bg-primary p-4 text-white">
+          <h2 className="text-lg font-medium">Notifications</h2>
+          {unreadCount > 0 && (
+            <Button 
+              variant="ghost" 
+              className="h-auto p-1 text-xs hover:bg-primary-foreground/20"
+              onClick={() => markAllAsRead()}
+            >
+              Mark all as read
+            </Button>
+          )}
+        </div>
+        
+        <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab}>
+          <div className="border-b">
+            <TabsList className="w-full bg-transparent px-4 pt-2 gap-4 justify-start">
+              <TabsTrigger value="all" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:text-primary rounded-none">
                 All
               </TabsTrigger>
-              <TabsTrigger className="flex-1 rounded-none" value="unread">
+              <TabsTrigger value="unread" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:text-primary rounded-none">
                 Unread
                 {unreadCount > 0 && (
-                  <span className="ml-1.5 rounded-full bg-primary/20 px-1.5 text-xs font-medium">
+                  <span className="ml-1 bg-primary/10 text-primary text-xs rounded-full px-2">
                     {unreadCount}
                   </span>
                 )}
               </TabsTrigger>
-              <TabsTrigger className="flex-1 rounded-none" value="due">
-                Due Soon
+              <TabsTrigger value="read" className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:text-primary rounded-none">
+                Read
               </TabsTrigger>
             </TabsList>
           </div>
           
-          <TabsContent value="all" className="max-h-96 overflow-y-auto">
+          <TabsContent value="all" className="mt-0">
             <NotificationList 
-              groupedNotifications={groupedNotifications} 
-              getIcon={getIcon} 
-              onMarkAsRead={handleMarkAsRead}
+              notifications={filteredNotifications}
+              onMarkAsRead={markAsRead}
             />
           </TabsContent>
           
-          <TabsContent value="unread" className="max-h-96 overflow-y-auto">
-            {filteredNotifications.length > 0 ? (
-              <div className="divide-y divide-gray-100 dark:divide-slate-700">
-                {filteredNotifications.map((notification) => (
-                  <NotificationItem 
-                    key={notification.id}
-                    notification={notification}
-                    icon={getIcon(notification.type)}
-                    onMarkAsRead={handleMarkAsRead}
-                  />
-                ))}
-              </div>
-            ) : (
-              <div className="p-8 text-center">
-                <Check className="mx-auto h-12 w-12 text-gray-300 dark:text-gray-600" />
-                <p className="mt-2 text-gray-500 dark:text-gray-400">No unread notifications</p>
-              </div>
-            )}
+          <TabsContent value="unread" className="mt-0">
+            <NotificationList 
+              notifications={filteredNotifications}
+              onMarkAsRead={markAsRead}
+            />
           </TabsContent>
           
-          <TabsContent value="due" className="max-h-96 overflow-y-auto">
-            {filteredNotifications.length > 0 ? (
-              <div className="divide-y divide-gray-100 dark:divide-slate-700">
-                {filteredNotifications.map((notification) => (
-                  <NotificationItem 
-                    key={notification.id}
-                    notification={notification}
-                    icon={getIcon(notification.type)}
-                    onMarkAsRead={handleMarkAsRead}
-                  />
-                ))}
-              </div>
-            ) : (
-              <div className="p-8 text-center">
-                <Clock className="mx-auto h-12 w-12 text-gray-300 dark:text-gray-600" />
-                <p className="mt-2 text-gray-500 dark:text-gray-400">No upcoming due dates</p>
-              </div>
-            )}
+          <TabsContent value="read" className="mt-0">
+            <NotificationList 
+              notifications={filteredNotifications}
+              onMarkAsRead={markAsRead}
+            />
           </TabsContent>
         </Tabs>
-      </div>
-      
-      <div className="p-3 border-t border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900/50 text-center">
-        <Button 
-          variant="ghost" 
-          size="sm"
-          onClick={handleMarkAllAsRead}
-          className="text-sm text-primary hover:text-primary/80 dark:text-primary dark:hover:text-primary/80 transition-colors"
-          disabled={unreadCount === 0}
-        >
-          <Check className="h-3.5 w-3.5 mr-1.5" />
-          Mark all as read
-        </Button>
-      </div>
-    </div>
+        
+        {notifications.length > 0 && (
+          <div className="p-2 border-t">
+            <Button variant="ghost" size="sm" className="w-full text-xs">
+              View all notifications
+            </Button>
+          </div>
+        )}
+      </PopoverContent>
+    </Popover>
   );
 };
 
 interface NotificationListProps {
-  groupedNotifications: Record<string, any[]>;
-  getIcon: (type: string) => React.ReactNode;
-  onMarkAsRead: (id: string) => void;
+  notifications: any[];
+  onMarkAsRead: (id: string) => Promise<boolean>;
 }
 
-const NotificationList: React.FC<NotificationListProps> = ({ 
-  groupedNotifications, 
-  getIcon,
-  onMarkAsRead
-}) => {
-  if (Object.keys(groupedNotifications).length === 0) {
+const NotificationList: React.FC<NotificationListProps> = ({ notifications, onMarkAsRead }) => {
+  if (notifications.length === 0) {
     return (
-      <div className="p-8 text-center">
-        <Bell className="mx-auto h-12 w-12 text-gray-300 dark:text-gray-600" />
-        <p className="mt-2 text-gray-500 dark:text-gray-400">No notifications yet</p>
+      <div className="p-4 text-center text-muted-foreground">
+        <p>No notifications found</p>
       </div>
     );
   }
-
+  
   return (
-    <div>
-      {groupedNotifications.today && groupedNotifications.today.length > 0 && (
-        <div>
-          <div className="px-4 py-2 bg-gray-50 dark:bg-slate-900/50">
-            <h4 className="text-xs font-medium text-gray-500 dark:text-gray-400">Today</h4>
+    <div className="max-h-[350px] overflow-y-auto">
+      {notifications.map((notification) => (
+        <div 
+          key={notification.id} 
+          className={`p-3 border-b last:border-b-0 ${notification.is_read ? 'bg-white' : 'bg-primary/5'}`}
+          onClick={() => !notification.is_read && onMarkAsRead(notification.id)}
+        >
+          <div className="flex justify-between items-start">
+            <h3 className="text-sm font-medium">{notification.title}</h3>
+            {!notification.is_read && (
+              <div className="w-2 h-2 rounded-full bg-blue-500" />
+            )}
           </div>
-          <div className="divide-y divide-gray-100 dark:divide-slate-700">
-            {groupedNotifications.today.map((notification: any) => (
-              <NotificationItem 
-                key={notification.id}
-                notification={notification}
-                icon={getIcon(notification.type)}
-                onMarkAsRead={onMarkAsRead}
-              />
-            ))}
-          </div>
-        </div>
-      )}
-
-      {groupedNotifications.yesterday && groupedNotifications.yesterday.length > 0 && (
-        <div>
-          <div className="px-4 py-2 bg-gray-50 dark:bg-slate-900/50">
-            <h4 className="text-xs font-medium text-gray-500 dark:text-gray-400">Yesterday</h4>
-          </div>
-          <div className="divide-y divide-gray-100 dark:divide-slate-700">
-            {groupedNotifications.yesterday.map((notification: any) => (
-              <NotificationItem 
-                key={notification.id}
-                notification={notification}
-                icon={getIcon(notification.type)}
-                onMarkAsRead={onMarkAsRead}
-              />
-            ))}
+          <p className="text-xs text-muted-foreground mt-1">{notification.message}</p>
+          <div className="text-xs text-muted-foreground mt-2 flex justify-between">
+            <span>{format(new Date(notification.created_at), 'MMM d, h:mm a')}</span>
+            {!notification.is_read && (
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="h-auto py-0 px-2 text-xs hover:bg-primary/10 hover:text-primary"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onMarkAsRead(notification.id);
+                }}
+              >
+                Mark as read
+              </Button>
+            )}
           </div>
         </div>
-      )}
-
-      {groupedNotifications.thisWeek && groupedNotifications.thisWeek.length > 0 && (
-        <div>
-          <div className="px-4 py-2 bg-gray-50 dark:bg-slate-900/50">
-            <h4 className="text-xs font-medium text-gray-500 dark:text-gray-400">This Week</h4>
-          </div>
-          <div className="divide-y divide-gray-100 dark:divide-slate-700">
-            {groupedNotifications.thisWeek.map((notification: any) => (
-              <NotificationItem 
-                key={notification.id}
-                notification={notification}
-                icon={getIcon(notification.type)}
-                onMarkAsRead={onMarkAsRead}
-              />
-            ))}
-          </div>
-        </div>
-      )}
-
-      {groupedNotifications.earlier && groupedNotifications.earlier.length > 0 && (
-        <div>
-          <div className="px-4 py-2 bg-gray-50 dark:bg-slate-900/50">
-            <h4 className="text-xs font-medium text-gray-500 dark:text-gray-400">Earlier</h4>
-          </div>
-          <div className="divide-y divide-gray-100 dark:divide-slate-700">
-            {groupedNotifications.earlier.map((notification: any) => (
-              <NotificationItem 
-                key={notification.id}
-                notification={notification}
-                icon={getIcon(notification.type)}
-                onMarkAsRead={onMarkAsRead}
-              />
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
-
-interface NotificationItemProps {
-  notification: any;
-  icon: React.ReactNode;
-  onMarkAsRead: (id: string) => void;
-}
-
-const NotificationItem: React.FC<NotificationItemProps> = ({ notification, icon, onMarkAsRead }) => {
-  return (
-    <div 
-      className={`p-4 hover:bg-gray-50 dark:hover:bg-slate-900/20 transition-colors ${notification.read ? '' : 'bg-blue-50/30 dark:bg-blue-900/10'}`}
-      onClick={() => !notification.read && onMarkAsRead(notification.id)}
-    >
-      <div className="flex gap-3">
-        <div className="flex-shrink-0 mt-1">
-          {icon}
-        </div>
-        <div className="flex-1">
-          <p className={`text-sm text-gray-800 dark:text-gray-200 ${notification.read ? '' : 'font-medium'}`}>{notification.message}</p>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-            {new Date(notification.date).toLocaleString()}
-          </p>
-        </div>
-        {!notification.read && (
-          <button 
-            onClick={(e) => {
-              e.stopPropagation();
-              onMarkAsRead(notification.id);
-            }}
-            className="flex-shrink-0 text-gray-500 hover:text-primary dark:text-gray-400 dark:hover:text-primary"
-            aria-label="Mark as read"
-          >
-            <Check size={16} />
-          </button>
-        )}
-      </div>
+      ))}
     </div>
   );
 };
