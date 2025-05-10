@@ -21,13 +21,13 @@ export const subscribeToTable = (
   const channel = supabase
     .channel(`public:${table}`)
     .on(
-      'postgres_changes', 
-      { 
+      'postgres_changes',  // This needs to be a valid channel event name
+      {
         event, 
         schema: 'public', 
         table 
-      }, 
-      (payload) => callback(payload)
+      },
+      callback
     )
     .subscribe();
   
