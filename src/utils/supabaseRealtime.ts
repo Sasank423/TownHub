@@ -20,8 +20,8 @@ export const subscribeToTable = (
   // Create a channel with a unique name for this subscription
   const channel = supabase
     .channel(`public:${table}`)
-    .on(
-      'postgres_changes',  // This needs to be a valid channel event name
+    // The correct syntax is to use .on with the proper typing
+    .on('postgres_changes', // This is a specific event type for database changes
       {
         event, 
         schema: 'public', 
