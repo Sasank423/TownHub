@@ -23,9 +23,9 @@ export const subscribeToTable = (
     .on(
       'postgres_changes', 
       { 
-        event: event, 
+        event, 
         schema: 'public', 
-        table: table 
+        table 
       },
       callback
     )
