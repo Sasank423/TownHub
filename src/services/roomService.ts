@@ -1,6 +1,7 @@
 
 import { supabase } from '../integrations/supabase/client';
 import { Room, RoomAmenity, TimeSlot } from '../types/models';
+import { Json } from '../integrations/supabase/types';
 
 export const getRooms = async (): Promise<Room[]> => {
   const { data: roomsData, error: roomsError } = await supabase
@@ -31,11 +32,7 @@ export const getRooms = async (): Promise<Room[]> => {
           amenities: room.amenities || [],
           images: room.images || ['https://images.pexels.com/photos/1329571/pexels-photo-1329571.jpeg'],
           availabilitySchedule: [],
-          floorMapPosition: room.floor_map_position ? 
-            (typeof room.floor_map_position === 'object' ? 
-              { x: room.floor_map_position.x || 0, y: room.floor_map_position.y || 0 } : 
-              { x: 0, y: 0 }
-            ) : { x: 0, y: 0 }
+          floorMapPosition: parseFloorMapPosition(room.floor_map_position)
         };
       }
 
@@ -49,18 +46,32 @@ export const getRooms = async (): Promise<Room[]> => {
         images: room.images || ['https://images.pexels.com/photos/1329571/pexels-photo-1329571.jpeg'],
         availabilitySchedule: availabilityData ? availabilityData.map(item => ({
           date: item.date,
-          slots: Array.isArray(item.slots) ? item.slots : parseSlots(item.slots)
+          slots: parseSlots(item.slots)
         })) : [],
-        floorMapPosition: room.floor_map_position ? 
-          (typeof room.floor_map_position === 'object' ? 
-            { x: room.floor_map_position.x || 0, y: room.floor_map_position.y || 0 } : 
-            { x: 0, y: 0 }
-          ) : { x: 0, y: 0 }
+        floorMapPosition: parseFloorMapPosition(room.floor_map_position)
       };
     })
   );
 
   return rooms;
+};
+
+// Helper function to parse floor map position
+const parseFloorMapPosition = (position: Json | null): { x: number; y: number } => {
+  if (!position) {
+    return { x: 0, y: 0 };
+  }
+
+  // If it's an object with x and y properties
+  if (typeof position === 'object' && !Array.isArray(position) && position !== null) {
+    const posObj = position as Record<string, any>;
+    if (typeof posObj.x === 'number' && typeof posObj.y === 'number') {
+      return { x: posObj.x, y: posObj.y };
+    }
+  }
+
+  // Default fallback
+  return { x: 0, y: 0 };
 };
 
 // Parse slots data from JSON to ensure it matches the TimeSlot[] type
@@ -118,11 +129,7 @@ export const getRoomById = async (id: string): Promise<Room | null> => {
       amenities: room.amenities || [],
       images: room.images || ['https://images.pexels.com/photos/1329571/pexels-photo-1329571.jpeg'],
       availabilitySchedule: [],
-      floorMapPosition: room.floor_map_position ? 
-        (typeof room.floor_map_position === 'object' ? 
-          { x: room.floor_map_position.x || 0, y: room.floor_map_position.y || 0 } : 
-          { x: 0, y: 0 }
-        ) : { x: 0, y: 0 }
+      floorMapPosition: parseFloorMapPosition(room.floor_map_position)
     };
   }
 
@@ -136,13 +143,9 @@ export const getRoomById = async (id: string): Promise<Room | null> => {
     images: room.images || ['https://images.pexels.com/photos/1329571/pexels-photo-1329571.jpeg'],
     availabilitySchedule: availabilityData ? availabilityData.map(item => ({
       date: item.date,
-      slots: Array.isArray(item.slots) ? item.slots : parseSlots(item.slots)
+      slots: parseSlots(item.slots)
     })) : [],
-    floorMapPosition: room.floor_map_position ? 
-      (typeof room.floor_map_position === 'object' ? 
-        { x: room.floor_map_position.x || 0, y: room.floor_map_position.y || 0 } : 
-        { x: 0, y: 0 }
-      ) : { x: 0, y: 0 }
+    floorMapPosition: parseFloorMapPosition(room.floor_map_position)
   };
 };
 
@@ -201,11 +204,7 @@ export const searchRooms = async (
           amenities: room.amenities || [],
           images: room.images || ['https://images.pexels.com/photos/1329571/pexels-photo-1329571.jpeg'],
           availabilitySchedule: [],
-          floorMapPosition: room.floor_map_position ? 
-            (typeof room.floor_map_position === 'object' ? 
-              { x: room.floor_map_position.x || 0, y: room.floor_map_position.y || 0 } : 
-              { x: 0, y: 0 }
-            ) : { x: 0, y: 0 }
+          floorMapPosition: parseFloorMapPosition(room.floor_map_position)
         };
       }
 
@@ -219,13 +218,9 @@ export const searchRooms = async (
         images: room.images || ['https://images.pexels.com/photos/1329571/pexels-photo-1329571.jpeg'],
         availabilitySchedule: availabilityData ? availabilityData.map(item => ({
           date: item.date,
-          slots: Array.isArray(item.slots) ? item.slots : parseSlots(item.slots)
+          slots: parseSlots(item.slots)
         })) : [],
-        floorMapPosition: room.floor_map_position ? 
-          (typeof room.floor_map_position === 'object' ? 
-            { x: room.floor_map_position.x || 0, y: room.floor_map_position.y || 0 } : 
-            { x: 0, y: 0 }
-          ) : { x: 0, y: 0 }
+        floorMapPosition: parseFloorMapPosition(room.floor_map_position)
       };
     })
   );
