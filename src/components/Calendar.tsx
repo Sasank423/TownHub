@@ -40,7 +40,7 @@ export const Calendar: React.FC<CalendarProps> = ({ reservations }) => {
   };
   
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-4">
+    <div className="bg-card rounded-lg shadow-sm border border-border p-4">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-lg font-medium flex items-center">
           <CalendarIcon className="mr-2 h-5 w-5 text-primary" />
@@ -49,15 +49,15 @@ export const Calendar: React.FC<CalendarProps> = ({ reservations }) => {
         <div className="flex space-x-2">
           <button 
             onClick={prevMonth}
-            className="p-2 rounded hover:bg-gray-100"
+            className="p-2 rounded hover:bg-secondary text-foreground"
             aria-label="Previous month"
           >
             &lt;
           </button>
-          <h3 className="py-2">{format(currentMonth, 'MMMM yyyy')}</h3>
+          <h3 className="py-2 text-foreground">{format(currentMonth, 'MMMM yyyy')}</h3>
           <button 
             onClick={nextMonth}
-            className="p-2 rounded hover:bg-gray-100"
+            className="p-2 rounded hover:bg-secondary text-foreground"
             aria-label="Next month"
           >
             &gt;
@@ -69,7 +69,7 @@ export const Calendar: React.FC<CalendarProps> = ({ reservations }) => {
         {dayNames.map(day => (
           <div 
             key={day} 
-            className="text-center text-sm py-2 font-medium text-gray-500"
+            className="text-center text-sm py-2 font-medium text-muted-foreground"
           >
             {day}
           </div>
@@ -88,11 +88,11 @@ export const Calendar: React.FC<CalendarProps> = ({ reservations }) => {
             <div 
               key={i}
               className={`h-24 border rounded-md p-1 ${
-                isToday ? 'border-primary bg-primary/5' : 'border-gray-100'
+                isToday ? 'border-primary bg-primary/10' : 'border-border'
               }`}
             >
               <div className="text-right mb-1">
-                <span className={`text-sm ${isToday ? 'font-semibold text-primary' : ''}`}>
+                <span className={`text-sm ${isToday ? 'font-semibold text-primary' : 'text-foreground'}`}>
                   {format(day, 'd')}
                 </span>
               </div>
@@ -102,7 +102,9 @@ export const Calendar: React.FC<CalendarProps> = ({ reservations }) => {
                   <div 
                     key={idx}
                     className={`text-xs px-1 py-0.5 rounded truncate flex items-center ${
-                      res.itemType === 'book' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'
+                      res.itemType === 'book' 
+                        ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' 
+                        : 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300'
                     }`}
                   >
                     {res.itemType === 'book' ? (
@@ -115,7 +117,7 @@ export const Calendar: React.FC<CalendarProps> = ({ reservations }) => {
                 ))}
                 
                 {dayReservations.length > 2 && (
-                  <div className="text-xs text-gray-500 px-1">
+                  <div className="text-xs text-muted-foreground px-1">
                     +{dayReservations.length - 2} more
                   </div>
                 )}

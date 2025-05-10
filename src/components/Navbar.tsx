@@ -2,7 +2,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { Bell, BookOpen, Calendar, BarChart2, FileText, LogOut, Search, User } from 'lucide-react';
+import { Bell, BookOpen, Calendar, BarChart2, FileText, LogOut, Search, User, Settings } from 'lucide-react';
 import { NotificationCenter } from './NotificationCenter';
 import { ThemeToggle } from './ThemeToggle';
 import { 
@@ -11,6 +11,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 export const Navbar: React.FC = () => {
   const { user, logout } = useAuth();
@@ -89,11 +90,12 @@ export const Navbar: React.FC = () => {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button className="flex items-center space-x-2 p-2 rounded-full hover:bg-secondary transition-colors">
-                    <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
-                      <span className="text-primary-foreground font-semibold">
-                        {user.name ? user.name.charAt(0) : 'U'}
-                      </span>
-                    </div>
+                    <Avatar className="h-9 w-9 border-2 border-primary/20">
+                      <AvatarImage src={user.avatarUrl} alt={user.name || 'User'} />
+                      <AvatarFallback className="bg-primary/30 text-primary-foreground">
+                        {user.name ? user.name.charAt(0).toUpperCase() : 'U'}
+                      </AvatarFallback>
+                    </Avatar>
                     <span className="hidden md:inline text-sm font-medium">
                       {user.name || 'User'}
                     </span>
@@ -116,6 +118,12 @@ export const Navbar: React.FC = () => {
                     <Link to="/calendar" className="flex items-center space-x-2">
                       <Calendar size={16} />
                       <span>Calendar</span>
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/settings" className="flex items-center space-x-2">
+                      <Settings size={16} />
+                      <span>Settings</span>
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem className="text-destructive" onClick={logout}>
