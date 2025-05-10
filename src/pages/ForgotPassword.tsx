@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { ThemeToggle } from '../components/ThemeToggle';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from '@/components/ui/sonner';
@@ -33,19 +34,20 @@ const ForgotPassword = () => {
   };
 
   return (
-    <div className="min-h-screen bg-secondary/20 flex flex-col">
+    <div className="min-h-screen bg-secondary/20 dark:bg-background flex flex-col">
       <div className="container mx-auto px-4 py-8">
-        <div className="flex justify-center mb-8">
+        <div className="flex justify-between items-center mb-8">
           <Link to="/" className="inline-flex items-center">
             <img src="/logo.svg" alt="TownBook Logo" className="h-10" />
           </Link>
+          <ThemeToggle />
         </div>
         
         <div className="w-full max-w-md mx-auto">
-          <div className="space-y-6 bg-white p-8 rounded-lg shadow-sm border border-gray-100">
+          <div className="space-y-6 bg-card p-8 rounded-lg shadow-sm border border-border">
             <div className="text-center">
               <h2 className="text-2xl font-semibold">Reset Password</h2>
-              <p className="text-sm text-gray-600 mt-2">
+              <p className="text-sm text-muted-foreground mt-2">
                 {resetSent 
                   ? 'Check your email for reset instructions'
                   : 'Enter your email to receive a password reset link'}
@@ -54,7 +56,7 @@ const ForgotPassword = () => {
 
             {resetSent ? (
               <div className="text-center space-y-4">
-                <div className="p-3 bg-green-50 text-green-700 rounded-md">
+                <div className="p-3 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-md">
                   Reset link sent to {email}
                 </div>
                 
@@ -80,7 +82,7 @@ const ForgotPassword = () => {
                 <div className="space-y-2">
                   <label 
                     htmlFor="email" 
-                    className="block text-sm font-medium text-gray-700"
+                    className="block text-sm font-medium text-foreground"
                   >
                     Email
                   </label>

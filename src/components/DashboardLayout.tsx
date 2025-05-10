@@ -55,7 +55,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                 ))}
               </div>
             )}
-            <h1 className="text-3xl font-semibold">{title}</h1>
+            <h1 className="text-3xl font-semibold text-foreground">{title}</h1>
           </div>
           <ThemeToggle />
         </div>

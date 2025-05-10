@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from '@/components/ui/sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 export const AuthForm: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -37,11 +38,7 @@ export const AuthForm: React.FC = () => {
     
     try {
       await login(formData.email, formData.password);
-      // If there's no error after login, redirect
-      if (!error) {
-        navigate('/');
-        toast.success('Welcome back!');
-      }
+      // Navigate will happen via the onAuthStateChange handler in AuthContext
     } catch (err) {
       console.error(err);
     } finally {
@@ -49,7 +46,7 @@ export const AuthForm: React.FC = () => {
     }
   };
 
-  const handleSignup = (e: React.FormEvent) => {
+  const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (formData.password !== formData.confirmPassword) {
@@ -57,9 +54,28 @@ export const AuthForm: React.FC = () => {
       return;
     }
 
-    // In a real app, this would create a new user
-    toast.success('Account created successfully!');
-    setActiveTab('login');
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email: formData.email,
+        password: formData.password,
+        options: {
+          data: {
+            name: formData.name,
+          }
+        }
+      });
+      
+      if (error) throw error;
+
+      toast.success('Account created successfully! Please check your email for verification.');
+      setActiveTab('login');
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to create account');
+      console.error(err);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleForgotPassword = async (e: React.FormEvent) => {
@@ -90,7 +106,6 @@ export const AuthForm: React.FC = () => {
       } else {
         await login('jane@example.com', 'password');
       }
-      navigate('/');
     } catch (err) {
       console.error(err);
     } finally {
@@ -101,10 +116,10 @@ export const AuthForm: React.FC = () => {
   return (
     <div className="w-full max-w-md mx-auto">
       {showForgotPassword ? (
-        <div className="space-y-6 bg-white p-8 rounded-lg shadow-sm border border-gray-100">
+        <div className="space-y-6 bg-card p-8 rounded-lg shadow-sm border border-border">
           <div className="text-center">
             <h2 className="text-2xl font-semibold">Reset Password</h2>
-            <p className="text-sm text-gray-600 mt-2">
+            <p className="text-sm text-muted-foreground mt-2">
               {resetSent 
                 ? 'Check your email for reset instructions'
                 : 'Enter your email to receive a password reset link'}
@@ -113,7 +128,7 @@ export const AuthForm: React.FC = () => {
 
           {resetSent ? (
             <div className="text-center space-y-4">
-              <div className="p-3 bg-green-50 text-green-700 rounded-md">
+              <div className="p-3 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-md">
                 Reset link sent to {formData.email}
               </div>
               
@@ -166,14 +181,14 @@ export const AuthForm: React.FC = () => {
           </TabsList>
           
           <TabsContent value="login" className="mt-4">
-            <div className="space-y-6 bg-white p-8 rounded-lg shadow-sm border border-gray-100">
+            <div className="space-y-6 bg-card p-8 rounded-lg shadow-sm border border-border">
               <div className="text-center">
                 <h2 className="text-2xl font-semibold">Welcome Back</h2>
-                <p className="text-sm text-gray-600 mt-2">Sign in to your TownBook account</p>
+                <p className="text-sm text-muted-foreground mt-2">Sign in to your TownBook account</p>
               </div>
 
               {error && (
-                <div className="p-3 bg-red-50 text-red-700 text-sm rounded-md">
+                <div className="p-3 bg-destructive/10 text-destructive text-sm rounded-md">
                   {error}
                 </div>
               )}
@@ -222,10 +237,10 @@ export const AuthForm: React.FC = () => {
 
                 <div className="relative my-4">
                   <div className="absolute inset-0 flex items-center">
-                    <div className="w-full border-t border-gray-200"></div>
+                    <div className="w-full border-t border-border"></div>
                   </div>
                   <div className="relative flex justify-center text-sm">
-                    <span className="px-2 bg-white text-gray-500">Demo accounts</span>
+                    <span className="px-2 bg-card text-muted-foreground">Demo accounts</span>
                   </div>
                 </div>
 
@@ -252,10 +267,10 @@ export const AuthForm: React.FC = () => {
           </TabsContent>
           
           <TabsContent value="signup" className="mt-4">
-            <div className="space-y-6 bg-white p-8 rounded-lg shadow-sm border border-gray-100">
+            <div className="space-y-6 bg-card p-8 rounded-lg shadow-sm border border-border">
               <div className="text-center">
                 <h2 className="text-2xl font-semibold">Create an Account</h2>
-                <p className="text-sm text-gray-600 mt-2">Join TownBook library community</p>
+                <p className="text-sm text-muted-foreground mt-2">Join TownBook library community</p>
               </div>
 
               <form onSubmit={handleSignup} className="space-y-4">
@@ -316,7 +331,7 @@ export const AuthForm: React.FC = () => {
                   </Button>
                 </div>
 
-                <p className="text-sm text-gray-500 text-center">
+                <p className="text-sm text-muted-foreground text-center">
                   By signing up, you agree to our <a href="#" className="text-primary hover:underline">Terms of Service</a> and <a href="#" className="text-primary hover:underline">Privacy Policy</a>.
                 </p>
               </form>
