@@ -1,4 +1,3 @@
-
 import { supabase } from '../integrations/supabase/client';
 import { Room, RoomAmenity } from '../types/models';
 
@@ -23,16 +22,28 @@ export const getRooms = async (): Promise<Room[]> => {
       if (availabilityError) {
         console.error(`Error fetching availability for room ${room.id}:`, availabilityError);
         return {
-          ...room,
-          availabilitySchedule: [],
+          id: room.id,
+          name: room.name,
+          description: room.description || '',
+          capacity: room.capacity,
+          location: room.location || '',
+          amenities: room.amenities || [],
           images: room.images || ['https://images.pexels.com/photos/1329571/pexels-photo-1329571.jpeg'],
+          availabilitySchedule: [],
+          floorMapPosition: room.floor_map_position || { x: 0, y: 0 }
         };
       }
 
       return {
-        ...room,
-        availabilitySchedule: availabilityData,
+        id: room.id,
+        name: room.name,
+        description: room.description || '',
+        capacity: room.capacity,
+        location: room.location || '',
+        amenities: room.amenities || [],
         images: room.images || ['https://images.pexels.com/photos/1329571/pexels-photo-1329571.jpeg'],
+        availabilitySchedule: availabilityData || [],
+        floorMapPosition: room.floor_map_position || { x: 0, y: 0 }
       };
     })
   );
@@ -60,16 +71,28 @@ export const getRoomById = async (id: string): Promise<Room | null> => {
   if (availabilityError) {
     console.error(`Error fetching availability for room ${id}:`, availabilityError);
     return {
-      ...room,
-      availabilitySchedule: [],
+      id: room.id,
+      name: room.name,
+      description: room.description || '',
+      capacity: room.capacity,
+      location: room.location || '',
+      amenities: room.amenities || [],
       images: room.images || ['https://images.pexels.com/photos/1329571/pexels-photo-1329571.jpeg'],
+      availabilitySchedule: [],
+      floorMapPosition: room.floor_map_position || { x: 0, y: 0 }
     };
   }
 
   return {
-    ...room,
-    availabilitySchedule: availabilityData,
+    id: room.id,
+    name: room.name,
+    description: room.description || '',
+    capacity: room.capacity,
+    location: room.location || '',
+    amenities: room.amenities || [],
     images: room.images || ['https://images.pexels.com/photos/1329571/pexels-photo-1329571.jpeg'],
+    availabilitySchedule: availabilityData || [],
+    floorMapPosition: room.floor_map_position || { x: 0, y: 0 }
   };
 };
 
@@ -120,16 +143,28 @@ export const searchRooms = async (
       if (availabilityError) {
         console.error(`Error fetching availability for room ${room.id}:`, availabilityError);
         return {
-          ...room,
-          availabilitySchedule: [],
+          id: room.id,
+          name: room.name,
+          description: room.description || '',
+          capacity: room.capacity,
+          location: room.location || '',
+          amenities: room.amenities || [],
           images: room.images || ['https://images.pexels.com/photos/1329571/pexels-photo-1329571.jpeg'],
+          availabilitySchedule: [],
+          floorMapPosition: room.floor_map_position || { x: 0, y: 0 }
         };
       }
 
       return {
-        ...room,
-        availabilitySchedule: availabilityData,
+        id: room.id,
+        name: room.name,
+        description: room.description || '',
+        capacity: room.capacity,
+        location: room.location || '',
+        amenities: room.amenities || [],
         images: room.images || ['https://images.pexels.com/photos/1329571/pexels-photo-1329571.jpeg'],
+        availabilitySchedule: availabilityData || [],
+        floorMapPosition: room.floor_map_position || { x: 0, y: 0 }
       };
     })
   );
@@ -140,7 +175,7 @@ export const searchRooms = async (
       const availabilityForDate = room.availabilitySchedule.find(
         schedule => schedule.date === filters.date
       );
-      return availabilityForDate && availabilityForDate.slots.some(slot => slot.isAvailable);
+      return availabilityForDate && availabilityForDate.slots.some((slot: any) => slot.isAvailable);
     });
   }
 

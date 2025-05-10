@@ -22,7 +22,11 @@ export const subscribeToTable = (
     .channel(`public:${table}`)
     .on(
       'postgres_changes', 
-      { event, schema: 'public', table },
+      { 
+        event: event, 
+        schema: 'public', 
+        table: table 
+      },
       callback
     )
     .subscribe();

@@ -1,6 +1,5 @@
-
 import { supabase } from '../integrations/supabase/client';
-import { Book } from '../types/models';
+import { Book, BookStatus } from '../types/models';
 
 export const getBooks = async (): Promise<Book[]> => {
   const { data, error } = await supabase
@@ -9,22 +8,16 @@ export const getBooks = async (): Promise<Book[]> => {
       id,
       title,
       author,
-      cover_image as coverImage,
+      cover_image,
       description,
-      page_count as pageCount,
-      publication_year as publicationYear,
+      page_count,
+      publication_year,
       publisher,
       genres,
       isbn,
       language,
       rating,
-      added_date as addedDate,
-      book_copies:book_copies(
-        id,
-        status,
-        location,
-        condition
-      )
+      added_date
     `)
     .order('title');
 
@@ -33,10 +26,38 @@ export const getBooks = async (): Promise<Book[]> => {
     return [];
   }
 
+  // Get book copies in a separate query
+  const { data: copiesData, error: copiesError } = await supabase
+    .from('book_copies')
+    .select('*');
+
+  if (copiesError) {
+    console.error("Error fetching book copies:", copiesError);
+    return [];
+  }
+
+  // Map the data to match our Book interface
   return data.map(book => ({
-    ...book,
-    copies: book.book_copies || [],
-    coverImage: book.coverImage || 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?q=80&w=200&auto=format'
+    id: book.id,
+    title: book.title,
+    author: book.author,
+    coverImage: book.cover_image || 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?q=80&w=200&auto=format',
+    description: book.description || '',
+    pageCount: book.page_count || 0,
+    publicationYear: book.publication_year || 0,
+    publisher: book.publisher || '',
+    genres: book.genres || [],
+    isbn: book.isbn || '',
+    language: book.language || '',
+    rating: book.rating || 0,
+    addedDate: book.added_date,
+    copies: copiesData.filter(copy => copy.book_id === book.id).map(copy => ({
+      id: copy.id,
+      bookId: copy.book_id,
+      status: copy.status,
+      location: copy.location || '',
+      condition: copy.condition || ''
+    }))
   }));
 };
 
@@ -47,22 +68,16 @@ export const getBookById = async (id: string): Promise<Book | null> => {
       id,
       title,
       author,
-      cover_image as coverImage,
+      cover_image,
       description,
-      page_count as pageCount,
-      publication_year as publicationYear,
+      page_count,
+      publication_year,
       publisher,
       genres,
       isbn,
       language,
       rating,
-      added_date as addedDate,
-      book_copies:book_copies(
-        id,
-        status,
-        location,
-        condition
-      )
+      added_date
     `)
     .eq('id', id)
     .single();
@@ -72,10 +87,38 @@ export const getBookById = async (id: string): Promise<Book | null> => {
     return null;
   }
 
+  // Get book copies
+  const { data: copiesData, error: copiesError } = await supabase
+    .from('book_copies')
+    .select('*')
+    .eq('book_id', id);
+
+  if (copiesError) {
+    console.error(`Error fetching copies for book ${id}:`, copiesError);
+    return null;
+  }
+
   return {
-    ...data,
-    copies: data.book_copies || [],
-    coverImage: data.coverImage || 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?q=80&w=200&auto=format'
+    id: data.id,
+    title: data.title,
+    author: data.author,
+    coverImage: data.cover_image || 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?q=80&w=200&auto=format',
+    description: data.description || '',
+    pageCount: data.page_count || 0,
+    publicationYear: data.publication_year || 0,
+    publisher: data.publisher || '',
+    genres: data.genres || [],
+    isbn: data.isbn || '',
+    language: data.language || '',
+    rating: data.rating || 0,
+    addedDate: data.added_date,
+    copies: copiesData.map(copy => ({
+      id: copy.id,
+      bookId: copy.book_id,
+      status: copy.status,
+      location: copy.location || '',
+      condition: copy.condition || ''
+    }))
   };
 };
 
@@ -94,22 +137,16 @@ export const searchBooks = async (
       id,
       title,
       author,
-      cover_image as coverImage,
+      cover_image,
       description,
-      page_count as pageCount,
-      publication_year as publicationYear,
+      page_count,
+      publication_year,
       publisher,
       genres,
       isbn,
       language,
       rating,
-      added_date as addedDate,
-      book_copies:book_copies(
-        id,
-        status,
-        location,
-        condition
-      )
+      added_date
     `);
 
   // Apply search query
@@ -140,13 +177,43 @@ export const searchBooks = async (
     return [];
   }
 
-  // Transform and filter by availability if needed
+  // Get all book copies
+  const { data: copiesData, error: copiesError } = await supabase
+    .from('book_copies')
+    .select('*');
+
+  if (copiesError) {
+    console.error("Error fetching book copies:", copiesError);
+    return [];
+  }
+
+  // Transform the data
   const books = data.map(book => ({
-    ...book,
-    copies: book.book_copies || [],
-    coverImage: book.coverImage || 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?q=80&w=200&auto=format'
+    id: book.id,
+    title: book.title,
+    author: book.author,
+    coverImage: book.cover_image || 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?q=80&w=200&auto=format',
+    description: book.description || '',
+    pageCount: book.page_count || 0,
+    publicationYear: book.publication_year || 0,
+    publisher: book.publisher || '',
+    genres: book.genres || [],
+    isbn: book.isbn || '',
+    language: book.language || '',
+    rating: book.rating || 0,
+    addedDate: book.added_date,
+    copies: copiesData
+      .filter(copy => copy.book_id === book.id)
+      .map(copy => ({
+        id: copy.id,
+        bookId: copy.book_id,
+        status: copy.status,
+        location: copy.location || '',
+        condition: copy.condition || ''
+      }))
   }));
 
+  // Filter by availability if needed
   if (filters.availability) {
     return books.filter(book => 
       book.copies.some(copy => copy.status === filters.availability)

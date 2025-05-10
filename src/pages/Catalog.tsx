@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { DashboardLayout } from '../components/DashboardLayout';
 import { Input } from '@/components/ui/input';
@@ -21,7 +20,11 @@ import {
 } from '@/components/ui/pagination';
 import { Card, CardContent } from '@/components/ui/card';
 import { Book, BookStatus } from '../types/models';
-import { searchBooks, getAllGenres, getAvailableBookCopiesCount } from '../utils/mockCatalogData';
+import { 
+  searchBooks, 
+  getAllGenres, 
+  getAvailableBookCopiesCount 
+} from '../services/bookService';
 import { LayoutList, LayoutGrid, Search, Filter, BookOpen, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -71,7 +74,7 @@ const Catalog = () => {
         setTotalPages(total);
         
         // Ensure current page is valid
-        const validPage = Math.max(1, Math.min(currentPage, total));
+        const validPage = Math.max(1, Math.min(currentPage, total || 1));
         if (validPage !== currentPage) {
           setCurrentPage(validPage);
         }

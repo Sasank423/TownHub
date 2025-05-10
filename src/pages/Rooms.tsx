@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { DashboardLayout } from '../components/DashboardLayout';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -12,7 +13,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { searchRooms, getAllAmenities } from '../utils/mockCatalogData';
+import { searchRooms, getAllAmenities } from '../services/roomService';
 import { Room, RoomAmenity, TimeSlot } from '../types/models';
 import { Link } from 'react-router-dom';
 import { 
@@ -30,6 +31,7 @@ import {
 import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Skeleton } from '@/components/ui/skeleton';
 
 // Format amenity name for display
 const formatAmenityName = (amenity: RoomAmenity): string => {
@@ -62,15 +64,42 @@ const Rooms = () => {
   const [viewMode, setViewMode] = useState<'list' | 'calendar' | 'map'>('list');
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   
-  // Get all available amenities
-  const allAmenities = getAllAmenities();
+  const [allAmenities, setAllAmenities] = useState<RoomAmenity[]>([]);
+  const [filteredRooms, setFilteredRooms] = useState<Room[]>([]);
+  const [loading, setLoading] = useState(true);
   
-  // Search and filter rooms
-  const filteredRooms = searchRooms(searchQuery, {
-    amenities: selectedAmenities.length > 0 ? selectedAmenities : undefined,
-    capacity: minCapacity ? Number(minCapacity) : undefined,
-    date: selectedDate ? format(selectedDate, 'yyyy-MM-dd') : undefined
-  });
+  useEffect(() => {
+    const fetchAmenities = async () => {
+      try {
+        const amenities = await getAllAmenities();
+        setAllAmenities(amenities);
+      } catch (error) {
+        console.error("Error fetching amenities:", error);
+      }
+    };
+    
+    fetchAmenities();
+  }, []);
+  
+  useEffect(() => {
+    const fetchRooms = async () => {
+      setLoading(true);
+      try {
+        const rooms = await searchRooms(searchQuery, {
+          amenities: selectedAmenities.length > 0 ? selectedAmenities : undefined,
+          capacity: minCapacity ? Number(minCapacity) : undefined,
+          date: selectedDate ? format(selectedDate, 'yyyy-MM-dd') : undefined
+        });
+        setFilteredRooms(rooms);
+      } catch (error) {
+        console.error("Error fetching rooms:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchRooms();
+  }, [searchQuery, selectedAmenities, minCapacity, selectedDate]);
   
   // Handle amenity toggle
   const toggleAmenity = (amenity: RoomAmenity) => {
@@ -148,24 +177,35 @@ const Rooms = () => {
                 {/* Amenities Filter */}
                 <div>
                   <h3 className="font-medium mb-2">Amenities</h3>
-                  <div className="grid grid-cols-2 gap-2">
-                    {allAmenities.map(amenity => (
-                      <div key={amenity} className="flex items-center space-x-2">
-                        <Checkbox 
-                          id={`amenity-${amenity}`}
-                          checked={selectedAmenities.includes(amenity)}
-                          onCheckedChange={() => toggleAmenity(amenity)}
-                        />
-                        <label
-                          htmlFor={`amenity-${amenity}`}
-                          className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex items-center gap-1"
-                        >
-                          {getAmenityIcon(amenity)}
-                          {formatAmenityName(amenity)}
-                        </label>
-                      </div>
-                    ))}
-                  </div>
+                  {loading ? (
+                    <div className="grid grid-cols-2 gap-2">
+                      {[1, 2, 3, 4, 5, 6].map(i => (
+                        <div key={i} className="flex items-center space-x-2">
+                          <Skeleton className="h-4 w-4 rounded" />
+                          <Skeleton className="h-4 w-24 rounded" />
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-2 gap-2">
+                      {allAmenities.map(amenity => (
+                        <div key={amenity} className="flex items-center space-x-2">
+                          <Checkbox 
+                            id={`amenity-${amenity}`}
+                            checked={selectedAmenities.includes(amenity)}
+                            onCheckedChange={() => toggleAmenity(amenity)}
+                          />
+                          <label
+                            htmlFor={`amenity-${amenity}`}
+                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex items-center gap-1"
+                          >
+                            {getAmenityIcon(amenity)}
+                            {formatAmenityName(amenity)}
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 
                 {/* Capacity Filter */}
@@ -208,11 +248,26 @@ const Rooms = () => {
         <div className="space-y-6">
           {viewMode === 'list' && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredRooms.map(room => (
-                <RoomCard key={room.id} room={room} selectedDate={selectedDate} />
-              ))}
-              
-              {filteredRooms.length === 0 && (
+              {loading ? (
+                Array.from({ length: 6 }).map((_, i) => (
+                  <Card key={i} className="overflow-hidden">
+                    <div className="aspect-video">
+                      <Skeleton className="h-full w-full" />
+                    </div>
+                    <CardContent className="p-4">
+                      <Skeleton className="h-5 w-3/4 mb-2" />
+                      <Skeleton className="h-4 w-1/2 mb-3" />
+                      <Skeleton className="h-3 w-full mb-2" />
+                      <Skeleton className="h-3 w-5/6 mb-3" />
+                      <div className="flex flex-wrap gap-1">
+                        {[1, 2, 3, 4].map(j => (
+                          <Skeleton key={j} className="h-6 w-6 rounded" />
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))
+              ) : filteredRooms.length === 0 ? (
                 <div className="col-span-full text-center py-16">
                   <Home className="mx-auto h-12 w-12 text-muted-foreground" />
                   <h3 className="mt-4 text-lg font-medium">No rooms found</h3>
@@ -227,6 +282,10 @@ const Rooms = () => {
                     </Button>
                   )}
                 </div>
+              ) : (
+                filteredRooms.map(room => (
+                  <RoomCard key={room.id} room={room} selectedDate={selectedDate} />
+                ))
               )}
             </div>
           )}
@@ -259,7 +318,32 @@ const Rooms = () => {
               </div>
               
               <div className="md:w-2/3 space-y-4">
-                {filteredRooms.length > 0 ? (
+                {loading ? (
+                  Array.from({ length: 3 }).map((_, i) => (
+                    <Card key={i}>
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-3">
+                            <Skeleton className="w-12 h-12 rounded-md" />
+                            <div>
+                              <Skeleton className="h-5 w-40 mb-1" />
+                              <Skeleton className="h-4 w-24" />
+                            </div>
+                          </div>
+                          <Skeleton className="h-9 w-20" />
+                        </div>
+                        <div className="border rounded-md p-2 bg-secondary/10">
+                          <Skeleton className="h-5 w-64 mb-2" />
+                          <div className="flex flex-wrap gap-2">
+                            {Array.from({ length: 8 }).map((_, j) => (
+                              <Skeleton key={j} className="h-8 w-20" />
+                            ))}
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))
+                ) : filteredRooms.length > 0 ? (
                   filteredRooms.map(room => (
                     <RoomTimeTable 
                       key={room.id} 
@@ -309,37 +393,52 @@ const Rooms = () => {
                     </div>
                     
                     {/* Plot rooms on the map */}
-                    {filteredRooms.map(room => (
-                      <Link
-                        key={room.id}
-                        to={`/rooms/${room.id}`}
-                        className="absolute group"
-                        style={{ 
-                          top: `${room.floorMapPosition.y}px`, 
-                          left: `${room.floorMapPosition.x}px` 
-                        }}
-                      >
-                        <div className={`
-                          h-16 w-16 rounded-full bg-primary/10 border-2 border-primary 
-                          flex flex-col items-center justify-center transition-transform 
-                          group-hover:scale-110 group-hover:shadow-md cursor-pointer
-                        `}>
-                          <span className="text-xs font-medium">{room.name.split(' ')[0]}</span>
-                          <span className="text-[10px] text-muted-foreground">Room</span>
+                    {loading ? (
+                      Array.from({ length: 5 }).map((_, i) => (
+                        <div 
+                          key={i}
+                          className="absolute"
+                          style={{ 
+                            top: `${100 + i * 70}px`, 
+                            left: `${150 + i * 50}px` 
+                          }}
+                        >
+                          <Skeleton className="h-16 w-16 rounded-full" />
                         </div>
-                        <div className="invisible group-hover:visible absolute top-full left-1/2 transform -translate-x-1/2 mt-2 bg-white p-2 rounded shadow-md z-10 w-48">
-                          <p className="font-medium text-sm">{room.name}</p>
-                          <p className="text-xs text-muted-foreground">Capacity: {room.capacity}</p>
-                          <div className="flex flex-wrap gap-1 mt-1">
-                            {room.amenities.slice(0, 3).map(amenity => (
-                              <Badge key={amenity} variant="outline" className="text-[10px]">
-                                {formatAmenityName(amenity)}
-                              </Badge>
-                            ))}
+                      ))
+                    ) : (
+                      filteredRooms.map(room => (
+                        <Link
+                          key={room.id}
+                          to={`/rooms/${room.id}`}
+                          className="absolute group"
+                          style={{ 
+                            top: `${room.floorMapPosition.y}px`, 
+                            left: `${room.floorMapPosition.x}px` 
+                          }}
+                        >
+                          <div className={`
+                            h-16 w-16 rounded-full bg-primary/10 border-2 border-primary 
+                            flex flex-col items-center justify-center transition-transform 
+                            group-hover:scale-110 group-hover:shadow-md cursor-pointer
+                          `}>
+                            <span className="text-xs font-medium">{room.name.split(' ')[0]}</span>
+                            <span className="text-[10px] text-muted-foreground">Room</span>
                           </div>
-                        </div>
-                      </Link>
-                    ))}
+                          <div className="invisible group-hover:visible absolute top-full left-1/2 transform -translate-x-1/2 mt-2 bg-white p-2 rounded shadow-md z-10 w-48">
+                            <p className="font-medium text-sm">{room.name}</p>
+                            <p className="text-xs text-muted-foreground">Capacity: {room.capacity}</p>
+                            <div className="flex flex-wrap gap-1 mt-1">
+                              {room.amenities.slice(0, 3).map(amenity => (
+                                <Badge key={amenity} variant="outline" className="text-[10px]">
+                                  {formatAmenityName(amenity)}
+                                </Badge>
+                              ))}
+                            </div>
+                          </div>
+                        </Link>
+                      ))
+                    )}
                   </div>
                 </div>
                 

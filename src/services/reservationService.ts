@@ -14,7 +14,18 @@ export const getUserReservations = async (userId: string): Promise<Reservation[]
     return [];
   }
 
-  return data;
+  return data.map(reservation => ({
+    id: reservation.id,
+    userId: reservation.user_id,
+    itemId: reservation.item_id,
+    itemType: reservation.item_type,
+    title: reservation.title,
+    startDate: reservation.start_date,
+    endDate: reservation.end_date,
+    status: reservation.status,
+    notes: reservation.notes,
+    createdAt: reservation.created_at
+  }));
 };
 
 export const createReservation = async (reservation: {
@@ -48,7 +59,18 @@ export const createReservation = async (reservation: {
     return null;
   }
 
-  return data;
+  return {
+    id: data.id,
+    userId: data.user_id,
+    itemId: data.item_id,
+    itemType: data.item_type,
+    title: data.title,
+    startDate: data.start_date,
+    endDate: data.end_date,
+    status: data.status,
+    notes: data.notes,
+    createdAt: data.created_at
+  };
 };
 
 export const updateReservationStatus = async (
@@ -80,5 +102,16 @@ export const getPendingReservations = async (): Promise<Reservation[]> => {
     return [];
   }
 
-  return data;
+  return data.map(reservation => ({
+    id: reservation.id,
+    userId: reservation.user_id,
+    itemId: reservation.item_id,
+    itemType: reservation.item_type,
+    title: reservation.title,
+    startDate: reservation.start_date,
+    endDate: reservation.end_date,
+    status: reservation.status,
+    notes: reservation.notes,
+    createdAt: reservation.created_at
+  }));
 };

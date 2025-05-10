@@ -72,3 +72,23 @@ export interface Reservation {
   notes?: string;
   createdAt: string;
 }
+
+export interface Notification {
+  id: string;
+  userId: string;
+  title: string;
+  message: string;
+  createdAt: string;
+  isRead: boolean;
+  relatedReservationId?: string;
+}
+
+export interface Activity {
+  id: string;
+  userId: string;
+  action: string;
+  description: string;
+  timestamp: string;
+  itemId?: string;
+  itemType?: string;
+}

@@ -14,7 +14,15 @@ export const getUserNotifications = async (userId: string): Promise<Notification
     return [];
   }
 
-  return data;
+  return data.map(notification => ({
+    id: notification.id,
+    userId: notification.user_id,
+    title: notification.title,
+    message: notification.message,
+    createdAt: notification.created_at,
+    isRead: notification.is_read,
+    relatedReservationId: notification.related_reservation_id
+  }));
 };
 
 export const markNotificationAsRead = async (notificationId: string): Promise<boolean> => {
@@ -57,5 +65,13 @@ export const createNotification = async (notification: {
     return null;
   }
 
-  return data;
+  return {
+    id: data.id,
+    userId: data.user_id,
+    title: data.title,
+    message: data.message,
+    createdAt: data.created_at,
+    isRead: data.is_read,
+    relatedReservationId: data.related_reservation_id
+  };
 };

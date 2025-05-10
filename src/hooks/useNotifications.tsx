@@ -23,7 +23,7 @@ export const useNotifications = (userId: string | undefined) => {
       setLoading(true);
       const data = await getUserNotifications(userId);
       setNotifications(data);
-      setUnreadCount(data.filter(n => !n.is_read).length);
+      setUnreadCount(data.filter(n => !n.isRead).length);
     } catch (err) {
       console.error('Error fetching notifications:', err);
       setError(err instanceof Error ? err : new Error('Failed to fetch notifications'));
@@ -39,7 +39,7 @@ export const useNotifications = (userId: string | undefined) => {
       if (success) {
         setNotifications(prevNotifications => 
           prevNotifications.map(n => 
-            n.id === notificationId ? { ...n, is_read: true } : n
+            n.id === notificationId ? { ...n, isRead: true } : n
           )
         );
         setUnreadCount(prev => Math.max(prev - 1, 0));
@@ -54,7 +54,7 @@ export const useNotifications = (userId: string | undefined) => {
   // Mark all notifications as read
   const markAllAsRead = useCallback(async () => {
     try {
-      const unreadNotifications = notifications.filter(n => !n.is_read);
+      const unreadNotifications = notifications.filter(n => !n.isRead);
       let success = true;
       
       for (const notification of unreadNotifications) {
@@ -64,7 +64,7 @@ export const useNotifications = (userId: string | undefined) => {
       
       if (success) {
         setNotifications(prevNotifications => 
-          prevNotifications.map(n => ({ ...n, is_read: true }))
+          prevNotifications.map(n => ({ ...n, isRead: true }))
         );
         setUnreadCount(0);
       }
@@ -89,13 +89,32 @@ export const useNotifications = (userId: string | undefined) => {
           // Only process notifications for this user
           if (payload.new && payload.new.user_id === userId) {
             if (payload.eventType === 'INSERT') {
-              setNotifications(prev => [payload.new, ...prev]);
+              setNotifications(prev => [
+                {
+                  id: payload.new.id,
+                  userId: payload.new.user_id,
+                  title: payload.new.title,
+                  message: payload.new.message,
+                  createdAt: payload.new.created_at,
+                  isRead: payload.new.is_read,
+                  relatedReservationId: payload.new.related_reservation_id
+                }, 
+                ...prev
+              ]);
               if (!payload.new.is_read) {
                 setUnreadCount(prev => prev + 1);
               }
             } else if (payload.eventType === 'UPDATE') {
               setNotifications(prev => 
-                prev.map(n => n.id === payload.new.id ? payload.new : n)
+                prev.map(n => n.id === payload.new.id ? {
+                  id: payload.new.id,
+                  userId: payload.new.user_id,
+                  title: payload.new.title,
+                  message: payload.new.message,
+                  createdAt: payload.new.created_at,
+                  isRead: payload.new.is_read,
+                  relatedReservationId: payload.new.related_reservation_id
+                } : n)
               );
               
               // Update unread count if read status changed

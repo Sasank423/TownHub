@@ -1,17 +1,38 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { DashboardLayout } from '../components/DashboardLayout';
 import { ReservationCard } from '../components/ReservationCard';
 import { Calendar } from '../components/Calendar';
 import { useAuth } from '../contexts/AuthContext';
-import { getUserReservations } from '../utils/mockData';
+import { getUserReservations } from '../services/reservationService';
 import { Book, Calendar as CalendarIcon, Bell, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
+import { Reservation } from '../types/models';
 
 const MemberDashboard = () => {
   const { user } = useAuth();
-  const reservations = user ? getUserReservations(user.id) : [];
+  const [reservations, setReservations] = useState<Reservation[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchReservations = async () => {
+      if (user) {
+        try {
+          const data = await getUserReservations(user.id);
+          setReservations(data);
+        } catch (error) {
+          console.error("Error fetching reservations:", error);
+        } finally {
+          setLoading(false);
+        }
+      } else {
+        setLoading(false);
+      }
+    };
+
+    fetchReservations();
+  }, [user]);
 
   const activeReservations = reservations.filter(res => res.status === 'Approved');
   const pendingReservations = reservations.filter(res => res.status === 'Pending');
@@ -69,19 +90,25 @@ const MemberDashboard = () => {
               </span>
             </div>
 
-            <div className="space-y-3">
-              {activeReservations.length > 0 ? (
-                activeReservations.map(reservation => (
-                  <ReservationCard key={reservation.id} reservation={reservation} compact />
-                ))
-              ) : (
-                <div className="text-center py-8">
-                  <Book className="mx-auto h-12 w-12 text-muted-foreground/40" />
-                  <h3 className="mt-2 text-foreground font-medium">No active reservations</h3>
-                  <p className="mt-1 text-sm text-muted-foreground">Browse our catalog to find books</p>
-                </div>
-              )}
-            </div>
+            {loading ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-primary"></div>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {activeReservations.length > 0 ? (
+                  activeReservations.map(reservation => (
+                    <ReservationCard key={reservation.id} reservation={reservation} compact />
+                  ))
+                ) : (
+                  <div className="text-center py-8">
+                    <Book className="mx-auto h-12 w-12 text-muted-foreground/40" />
+                    <h3 className="mt-2 text-foreground font-medium">No active reservations</h3>
+                    <p className="mt-1 text-sm text-muted-foreground">Browse our catalog to find books</p>
+                  </div>
+                )}
+              </div>
+            )}
 
             {activeReservations.length > 0 && (
               <div className="mt-3 pt-3 border-t border-border text-right">
@@ -106,19 +133,25 @@ const MemberDashboard = () => {
               )}
             </div>
 
-            <div className="space-y-3">
-              {pendingReservations.length > 0 ? (
-                pendingReservations.map(reservation => (
-                  <ReservationCard key={reservation.id} reservation={reservation} compact />
-                ))
-              ) : (
-                <div className="text-center py-8">
-                  <Bell className="mx-auto h-12 w-12 text-muted-foreground/40" />
-                  <h3 className="mt-2 text-foreground font-medium">No pending reservations</h3>
-                  <p className="mt-1 text-sm text-muted-foreground">All your requests have been processed</p>
-                </div>
-              )}
-            </div>
+            {loading ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-primary"></div>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {pendingReservations.length > 0 ? (
+                  pendingReservations.map(reservation => (
+                    <ReservationCard key={reservation.id} reservation={reservation} compact />
+                  ))
+                ) : (
+                  <div className="text-center py-8">
+                    <Bell className="mx-auto h-12 w-12 text-muted-foreground/40" />
+                    <h3 className="mt-2 text-foreground font-medium">No pending reservations</h3>
+                    <p className="mt-1 text-sm text-muted-foreground">All your requests have been processed</p>
+                  </div>
+                )}
+              </div>
+            )}
 
             {pendingReservations.length > 0 && (
               <div className="mt-3 pt-3 border-t border-border text-right">
