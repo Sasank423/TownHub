@@ -1,12 +1,13 @@
 
 import React from 'react';
 import { Book, Clock, User, Database, CheckCircle } from 'lucide-react';
-import { Activity, mockActivities } from '../utils/mockData';
+import { Activity } from '../types/models';
+import { mockActivities } from '../utils/mockData';
 import { format, formatDistance } from 'date-fns';
 
 export const ActivityFeed: React.FC = () => {
-  const getActivityIcon = (type: string) => {
-    switch (type) {
+  const getActivityIcon = (action: string) => {
+    switch (action) {
       case 'reservation':
         return <Book className="h-5 w-5 text-blue-500 dark:text-blue-400" />;
       case 'return':
@@ -39,15 +40,15 @@ export const ActivityFeed: React.FC = () => {
         {mockActivities.map((activity) => (
           <div key={activity.id} className="flex items-start space-x-3">
             <div className="p-2 rounded-lg bg-gray-50 dark:bg-slate-700 flex-shrink-0">
-              {getActivityIcon(activity.type)}
+              {getActivityIcon(activity.action)}
             </div>
             <div>
               <p className="text-sm dark:text-gray-200">
-                <span className="font-medium dark:text-white">{activity.user}</span>
-                <span className="text-gray-600 dark:text-gray-400"> {activity.details}</span>
+                <span className="font-medium dark:text-white">{activity.userId}</span>
+                <span className="text-gray-600 dark:text-gray-400"> {activity.description}</span>
               </p>
               <p className="text-xs text-gray-500 dark:text-gray-500">
-                {getTimeAgo(activity.date)}
+                {getTimeAgo(activity.timestamp)}
               </p>
             </div>
           </div>

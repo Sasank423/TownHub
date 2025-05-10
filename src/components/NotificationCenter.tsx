@@ -29,8 +29,8 @@ export const NotificationCenter = () => {
   const filteredNotifications = activeTab === 'all' 
     ? notifications 
     : activeTab === 'unread' 
-        ? notifications.filter(n => !n.is_read)
-        : notifications.filter(n => n.is_read);
+        ? notifications.filter(n => !n.isRead)
+        : notifications.filter(n => n.isRead);
   
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -131,19 +131,19 @@ const NotificationList: React.FC<NotificationListProps> = ({ notifications, onMa
       {notifications.map((notification) => (
         <div 
           key={notification.id} 
-          className={`p-3 border-b last:border-b-0 ${notification.is_read ? 'bg-white' : 'bg-primary/5'}`}
-          onClick={() => !notification.is_read && onMarkAsRead(notification.id)}
+          className={`p-3 border-b last:border-b-0 ${notification.isRead ? 'bg-white' : 'bg-primary/5'}`}
+          onClick={() => !notification.isRead && onMarkAsRead(notification.id)}
         >
           <div className="flex justify-between items-start">
             <h3 className="text-sm font-medium">{notification.title}</h3>
-            {!notification.is_read && (
+            {!notification.isRead && (
               <div className="w-2 h-2 rounded-full bg-blue-500" />
             )}
           </div>
           <p className="text-xs text-muted-foreground mt-1">{notification.message}</p>
           <div className="text-xs text-muted-foreground mt-2 flex justify-between">
-            <span>{format(new Date(notification.created_at), 'MMM d, h:mm a')}</span>
-            {!notification.is_read && (
+            <span>{format(new Date(notification.createdAt), 'MMM d, h:mm a')}</span>
+            {!notification.isRead && (
               <Button 
                 variant="ghost" 
                 size="sm" 

@@ -132,7 +132,7 @@ export const Navbar: React.FC = () => {
                 </button>
                 {showNotifications && (
                   <div className="absolute right-0 mt-2 z-10 w-80">
-                    <NotificationCenter onClose={() => setShowNotifications(false)} />
+                    <NotificationCenter />
                   </div>
                 )}
               </div>

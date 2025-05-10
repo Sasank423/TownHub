@@ -19,7 +19,48 @@ export const mockNotifications: Notification[] = [];
 export const mockPendingReservations: Reservation[] = [];
 
 // Mock activities - would need a new service
-export const mockActivities: Activity[] = [];
+export const mockActivities: Activity[] = [
+  {
+    id: '1',
+    userId: 'user1',
+    action: 'reservation',
+    description: 'reserved "The Great Gatsby"',
+    timestamp: '2023-05-09T14:30:00Z',
+    itemId: 'book1',
+    itemType: 'book',
+    // Added for compatibility with ActivityFeed component
+    type: 'reservation',
+    user: 'John Doe',
+    details: 'reserved "The Great Gatsby"',
+    date: '2023-05-09T14:30:00Z'
+  },
+  {
+    id: '2',
+    userId: 'user2',
+    action: 'return',
+    description: 'returned "To Kill a Mockingbird"',
+    timestamp: '2023-05-08T11:20:00Z',
+    itemId: 'book2',
+    itemType: 'book',
+    // Added for compatibility
+    type: 'return',
+    user: 'Jane Smith',
+    details: 'returned "To Kill a Mockingbird"',
+    date: '2023-05-08T11:20:00Z'
+  },
+  {
+    id: '3',
+    userId: 'user3',
+    action: 'new_member',
+    description: 'joined the library',
+    timestamp: '2023-05-07T09:15:00Z',
+    // Added for compatibility
+    type: 'new_member',
+    user: 'Alex Johnson',
+    details: 'joined the library',
+    date: '2023-05-07T09:15:00Z'
+  }
+];
 
 // Export the types for compatibility
 export type { User, Book, Room, Reservation, Notification, Activity };

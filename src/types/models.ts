@@ -91,4 +91,18 @@ export interface Activity {
   timestamp: string;
   itemId?: string;
   itemType?: string;
+  // Add the missing properties needed by ActivityFeed component
+  type: string;
+  user: string;
+  details: string;
+  date: string;
+}
+
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  membershipStatus: string;
+  joinDate: string;
 }
