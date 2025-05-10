@@ -1,10 +1,14 @@
+
 import React, { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 /**
  * This component prevents form submissions when clicking on links or buttons
  * within forms. It's used to fix the page refresh issue when navigating between tabs.
  */
 export const PreventFormSubmission: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const navigate = useNavigate();
+
   useEffect(() => {
     // Function to handle click events on the document
     const handleClick = (e: MouseEvent) => {
@@ -24,10 +28,11 @@ export const PreventFormSubmission: React.FC<{ children: React.ReactNode }> = ({
         
         // If it's a link with href, navigate programmatically
         if (link && link.href) {
-          // Use a small timeout to ensure the event is fully handled
-          setTimeout(() => {
-            window.location.href = link.href;
-          }, 10);
+          const url = new URL(link.href);
+          const pathname = url.pathname;
+          
+          // Use React Router's navigate instead of changing location
+          navigate(pathname + url.search);
         }
       }
     };
@@ -35,11 +40,22 @@ export const PreventFormSubmission: React.FC<{ children: React.ReactNode }> = ({
     // Add event listener
     document.addEventListener('click', handleClick, true);
     
+    // Listen for custom location change events 
+    const handleLocationChange = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      if (customEvent.detail?.href) {
+        navigate(customEvent.detail.href);
+      }
+    };
+    
+    window.addEventListener('locationchange', handleLocationChange);
+    
     // Clean up
     return () => {
       document.removeEventListener('click', handleClick, true);
+      window.removeEventListener('locationchange', handleLocationChange);
     };
-  }, []);
+  }, [navigate]);
   
   return <>{children}</>;
 };

@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -12,11 +11,54 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { supabase } from '@/integrations/supabase/client';
 
 export const Navbar: React.FC = () => {
   const { user, logout } = useAuth();
   const [showNotifications, setShowNotifications] = React.useState(false);
-  const [unreadNotifications] = React.useState(2); // Hardcoded for demo, would be dynamic in a real app
+  const [unreadNotifications, setUnreadNotifications] = React.useState(0);
+  
+  // Fetch unread notifications count from Supabase
+  React.useEffect(() => {
+    if (user) {
+      const fetchUnreadCount = async () => {
+        try {
+          const { data, error, count } = await supabase
+            .from('notifications')
+            .select('*', { count: 'exact' })
+            .eq('user_id', user.id)
+            .eq('is_read', false);
+            
+          if (error) throw error;
+          setUnreadNotifications(count || 0);
+        } catch (error) {
+          console.error('Error fetching notifications count:', error);
+        }
+      };
+      
+      fetchUnreadCount();
+      
+      // Set up subscription for real-time updates to notifications
+      const channel = supabase
+        .channel('public:notifications')
+        .on('postgres_changes', 
+          {
+            event: '*', 
+            schema: 'public', 
+            table: 'notifications',
+            filter: `user_id=eq.${user.id}`
+          }, 
+          () => {
+            fetchUnreadCount();
+          }
+        )
+        .subscribe();
+        
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    }
+  }, [user]);
 
   return (
     <nav className="bg-background border-b border-border">
@@ -37,15 +79,6 @@ export const Navbar: React.FC = () => {
                   <Link 
                     to="/add-books" 
                     className="text-foreground hover:text-primary transition-colors flex items-center gap-1"
-                    onClick={(e) => {
-                      // Check if we're inside a form
-                      const target = e.target as HTMLElement;
-                      const form = target.closest('form');
-                      if (form) {
-                        e.preventDefault();
-                        window.location.href = '/add-books';
-                      }
-                    }}
                   >
                     <BookOpen className="h-4 w-4" />
                     <span>Add Books</span>
@@ -54,15 +87,6 @@ export const Navbar: React.FC = () => {
                   <Link 
                     to="/catalog" 
                     className="text-foreground hover:text-primary transition-colors flex items-center gap-1"
-                    onClick={(e) => {
-                      // Check if we're inside a form
-                      const target = e.target as HTMLElement;
-                      const form = target.closest('form');
-                      if (form) {
-                        e.preventDefault();
-                        window.location.href = '/catalog';
-                      }
-                    }}
                   >
                     <BookOpen className="h-4 w-4" />
                     <span>Browse Books</span>

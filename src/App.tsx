@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-route
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { PreventFormSubmission } from "./components/PreventFormSubmission";
+import { supabase } from "@/integrations/supabase/client";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import ForgotPassword from "./pages/ForgotPassword";
@@ -59,42 +60,44 @@ const ProtectedRoute = ({ element, requiredRole }: { element: React.ReactNode, r
 
 const AppRoutes = () => {
   return (
-    <Routes>
-      {/* Public routes */}
-      <Route path="/" element={<Index />} />
-      <Route path="/login" element={<Login />} />
-      <Route path="/forgot-password" element={<ForgotPassword />} />
-      
-      {/* Member routes */}
-      <Route path="/member" element={<ProtectedRoute element={<MemberDashboard />} requiredRole="member" />} />
-      
-      {/* Librarian routes */}
-      <Route path="/librarian" element={<ProtectedRoute element={<LibrarianDashboard />} requiredRole="librarian" />} />
-      <Route path="/add-books" element={<ProtectedRoute element={<AddBooks />} requiredRole="librarian" />} />
-      
-      {/* Book routes */}
-      <Route path="/catalog" element={<ProtectedRoute element={<Catalog />} />} />
-      <Route path="/books/:id" element={<ProtectedRoute element={<BookDetails />} />} />
-      
-      {/* Room routes */}
-      <Route path="/rooms" element={<ProtectedRoute element={<Rooms />} />} />
-      <Route path="/rooms/:id" element={<ProtectedRoute element={<RoomDetails />} />} />
-      
-      {/* Reservation routes */}
-      <Route path="/reserve/:type/:id" element={<ProtectedRoute element={<ReservationWizard />} />} />
-      
-      {/* Analytics route */}
-      <Route path="/analytics" element={<ProtectedRoute element={<Analytics />} />} />
-      
-      {/* Profile route */}
-      <Route path="/profile" element={<ProtectedRoute element={<Profile />} />} />
-      
-      {/* Report issue route */}
-      <Route path="/report-issue" element={<ProtectedRoute element={<ReportIssue />} />} />
-      
-      {/* Catch-all route */}
-      <Route path="*" element={<NotFound />} />
-    </Routes>
+    <PreventFormSubmission>
+      <Routes>
+        {/* Public routes */}
+        <Route path="/" element={<Index />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        
+        {/* Member routes */}
+        <Route path="/member" element={<ProtectedRoute element={<MemberDashboard />} requiredRole="member" />} />
+        
+        {/* Librarian routes */}
+        <Route path="/librarian" element={<ProtectedRoute element={<LibrarianDashboard />} requiredRole="librarian" />} />
+        <Route path="/add-books" element={<ProtectedRoute element={<AddBooks />} requiredRole="librarian" />} />
+        
+        {/* Book routes */}
+        <Route path="/catalog" element={<ProtectedRoute element={<Catalog />} />} />
+        <Route path="/books/:id" element={<ProtectedRoute element={<BookDetails />} />} />
+        
+        {/* Room routes */}
+        <Route path="/rooms" element={<ProtectedRoute element={<Rooms />} />} />
+        <Route path="/rooms/:id" element={<ProtectedRoute element={<RoomDetails />} />} />
+        
+        {/* Reservation routes */}
+        <Route path="/reserve/:type/:id" element={<ProtectedRoute element={<ReservationWizard />} />} />
+        
+        {/* Analytics route */}
+        <Route path="/analytics" element={<ProtectedRoute element={<Analytics />} />} />
+        
+        {/* Profile route */}
+        <Route path="/profile" element={<ProtectedRoute element={<Profile />} />} />
+        
+        {/* Report issue route */}
+        <Route path="/report-issue" element={<ProtectedRoute element={<ReportIssue />} />} />
+        
+        {/* Catch-all route */}
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </PreventFormSubmission>
   );
 };
 
@@ -104,11 +107,9 @@ const App = () => (
       <ThemeProvider>
         <BrowserRouter>
           <AuthProvider>
-            <PreventFormSubmission>
-              <Toaster />
-              <Sonner />
-              <AppRoutes />
-            </PreventFormSubmission>
+            <Toaster />
+            <Sonner />
+            <AppRoutes />
           </AuthProvider>
         </BrowserRouter>
       </ThemeProvider>

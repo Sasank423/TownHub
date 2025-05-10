@@ -2,9 +2,14 @@
 import { createRoot } from 'react-dom/client'
 import App from './App.tsx'
 import './index.css'
-import { initPreventRefresh } from './utils/preventRefresh'
+import { supabase } from './integrations/supabase/client';
 
-// Initialize the utility to prevent page refreshes when clicking links inside forms
-initPreventRefresh();
+// Enable real-time for notifications
+const enableRealTime = async () => {
+  // Enable realtime for the notifications table
+  await supabase.rpc('enable_realtime', { table_name: 'notifications' });
+};
+
+enableRealTime();
 
 createRoot(document.getElementById("root")!).render(<App />);
