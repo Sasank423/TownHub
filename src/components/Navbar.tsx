@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -91,7 +90,8 @@ export const Navbar: React.FC = () => {
                 <DropdownMenuTrigger asChild>
                   <button className="flex items-center space-x-2 p-2 rounded-full hover:bg-secondary transition-colors">
                     <Avatar className="h-9 w-9 border-2 border-primary/20">
-                      <AvatarImage src={user.avatarUrl} alt={user.name || 'User'} />
+                      {/* Fix for the avatarUrl TypeScript error */}
+                      <AvatarImage src={user.name ? `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}` : undefined} alt={user.name || 'User'} />
                       <AvatarFallback className="bg-primary/30 text-primary-foreground">
                         {user.name ? user.name.charAt(0).toUpperCase() : 'U'}
                       </AvatarFallback>
