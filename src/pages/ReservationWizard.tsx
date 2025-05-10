@@ -41,7 +41,7 @@ import {
 import { format, addDays } from 'date-fns';
 import { getBookById, getRoomById } from '../utils/mockCatalogData';
 import { useAuth } from '../contexts/AuthContext';
-import { Reservation, ReservationType } from '../types/models';
+import { Reservation, ReservationType, Book as BookType, Room as RoomType } from '../types/models';
 
 const ReservationWizard = () => {
   const { type, id } = useParams<{ type: string; id: string }>();
@@ -78,13 +78,24 @@ const ReservationWizard = () => {
   // Confirmation dialog
   const [showConfirmation, setShowConfirmation] = useState(false);
   
+  // Helper function to safely get item title/name
+  const getItemTitle = () => {
+    if (!itemData) return '';
+    
+    if (itemType === 'book') {
+      return (itemData as BookType).title;
+    } else {
+      return (itemData as RoomType).name;
+    }
+  };
+  
   // Mock reservation data
   const mockReservation: Reservation = {
     id: `reservation-${Date.now()}`,
     userId: user?.id || '',
     itemId: id || '',
     itemType: itemType as ReservationType,
-    title: itemData?.name || itemData?.title || '',
+    title: getItemTitle(),
     startDate: startDate.toISOString(),
     endDate: endDate.toISOString(),
     status: 'Pending',
@@ -125,7 +136,7 @@ const ReservationWizard = () => {
   const getAvailableTimes = () => {
     if (itemType === 'room' && itemData) {
       const dateString = format(startDate, 'yyyy-MM-dd');
-      const room = itemData;
+      const room = itemData as RoomType;
       const availabilityForDate = room.availabilitySchedule.find(a => a.date === dateString);
       return availabilityForDate?.slots.filter(slot => slot.isAvailable) || [];
     }
@@ -333,7 +344,7 @@ const ReservationWizard = () => {
             <div>
               <p className="font-medium">Reservation Preview</p>
               <p className="text-sm text-muted-foreground">
-                You'll reserve {itemData.name} on {format(startDate, 'MMMM d, yyyy')} from {startTime} to {endTime}
+                You'll reserve {(itemData as RoomType).name} on {format(startDate, 'MMMM d, yyyy')} from {startTime} to {endTime}
               </p>
             </div>
           </div>
@@ -417,7 +428,7 @@ const ReservationWizard = () => {
           <div>
             <p className="font-medium">Time Slot Summary</p>
             <p className="text-sm text-muted-foreground">
-              You'll reserve {itemData.name} on {format(startDate, 'MMMM d, yyyy')} from {startTime} to {endTime}
+              You'll reserve {(itemData as RoomType).name} on {format(startDate, 'MMMM d, yyyy')} from {startTime} to {endTime}
             </p>
           </div>
         </div>
@@ -440,13 +451,13 @@ const ReservationWizard = () => {
         <CardContent>
           <div className="flex gap-4 items-start">
             <img 
-              src={(itemData as any).coverImage} 
-              alt={`Cover of ${(itemData as any).title}`}
+              src={(itemData as BookType).coverImage} 
+              alt={`Cover of ${(itemData as BookType).title}`}
               className="w-20 h-30 object-cover rounded"
             />
             <div>
-              <h3 className="font-medium">{(itemData as any).title}</h3>
-              <p className="text-sm text-muted-foreground">by {(itemData as any).author}</p>
+              <h3 className="font-medium">{(itemData as BookType).title}</h3>
+              <p className="text-sm text-muted-foreground">by {(itemData as BookType).author}</p>
               
               <div className="mt-4 grid grid-cols-2 gap-y-2 gap-x-4">
                 <div>
@@ -501,25 +512,25 @@ const ReservationWizard = () => {
           <div className="flex gap-4 items-start">
             {itemType === 'book' ? (
               <img 
-                src={(itemData as any).coverImage} 
-                alt={`Cover of ${(itemData as any).title}`}
+                src={(itemData as BookType).coverImage} 
+                alt={`Cover of ${(itemData as BookType).title}`}
                 className="w-20 h-30 object-cover rounded"
               />
             ) : (
               <img 
-                src={(itemData as any).images[0]} 
-                alt={`Image of ${(itemData as any).name}`}
+                src={(itemData as RoomType).images[0]} 
+                alt={`Image of ${(itemData as RoomType).name}`}
                 className="w-20 h-16 object-cover rounded"
               />
             )}
             <div>
               <h3 className="font-medium">
-                {itemType === 'book' ? (itemData as any).title : (itemData as any).name}
+                {itemType === 'book' ? (itemData as BookType).title : (itemData as RoomType).name}
               </h3>
               <p className="text-sm text-muted-foreground">
                 {itemType === 'book' 
-                  ? `by ${(itemData as any).author}` 
-                  : (itemData as any).location}
+                  ? `by ${(itemData as BookType).author}` 
+                  : (itemData as RoomType).location}
               </p>
               
               <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-y-2 gap-x-4">
@@ -594,7 +605,7 @@ const ReservationWizard = () => {
           path: itemType === 'book' ? '/catalog' : '/rooms' 
         },
         { 
-          label: itemType === 'book' ? (itemData as any).title : (itemData as any).name, 
+          label: itemType === 'book' ? (itemData as BookType).title : (itemData as RoomType).name, 
           path: itemType === 'book' ? `/books/${id}` : `/rooms/${id}` 
         },
         { label: 'Reserve' }

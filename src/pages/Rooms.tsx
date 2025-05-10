@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { DashboardLayout } from '../components/DashboardLayout';
 import { Input } from '@/components/ui/input';
@@ -31,6 +30,29 @@ import {
 import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
 import { Checkbox } from '@/components/ui/checkbox';
+
+// Format amenity name for display
+const formatAmenityName = (amenity: RoomAmenity): string => {
+  return amenity
+    .split('-')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+};
+
+// Get icon for amenity
+const getAmenityIcon = (amenity: RoomAmenity) => {
+  switch (amenity) {
+    case 'wifi': return <Wifi size={16} />;
+    case 'projector': return <Monitor size={16} />;
+    case 'whiteboard': return <PenTool size={16} />;
+    case 'computers': return <Monitor size={16} />;
+    case 'videoconferencing': return <Video size={16} />;
+    case 'printer': return <Printer size={16} />;
+    case 'study-pods': return <Users size={16} />;
+    case 'silence': return <span className="text-xs">🔇</span>;
+    default: return null;
+  }
+};
 
 const Rooms = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -65,29 +87,6 @@ const Rooms = () => {
     setMinCapacity('');
   };
   
-  // Get icon for amenity
-  const getAmenityIcon = (amenity: RoomAmenity) => {
-    switch (amenity) {
-      case 'wifi': return <Wifi size={16} />;
-      case 'projector': return <Monitor size={16} />;
-      case 'whiteboard': return <PenTool size={16} />;
-      case 'computers': return <Monitor size={16} />;
-      case 'videoconferencing': return <Video size={16} />;
-      case 'printer': return <Printer size={16} />;
-      case 'study-pods': return <Users size={16} />;
-      case 'silence': return <span className="text-xs">🔇</span>;
-      default: return null;
-    }
-  };
-  
-  // Format amenity name for display
-  const formatAmenityName = (amenity: RoomAmenity): string => {
-    return amenity
-      .split('-')
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(' ');
-  };
-
   return (
     <DashboardLayout 
       title="Reading Rooms" 
