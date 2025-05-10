@@ -20,11 +20,15 @@ export const subscribeToTable = (
   // Create a channel with a unique name for this subscription
   const channel = supabase
     .channel(`public:${table}`)
-    .on('postgres_changes', { 
-      event, 
-      schema: 'public', 
-      table 
-    }, callback)
+    .on(
+      'postgres_changes', 
+      { 
+        event, 
+        schema: 'public', 
+        table 
+      }, 
+      (payload) => callback(payload)
+    )
     .subscribe();
   
   return channel;
