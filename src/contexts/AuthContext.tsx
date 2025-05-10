@@ -31,6 +31,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
+        console.log("Auth state changed:", event, session?.user?.email);
         setSession(session);
         setUser(session?.user as UserData ?? null);
         
@@ -45,6 +46,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // THEN check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
+      console.log("Initial session check:", session?.user?.email);
       setSession(session);
       setUser(session?.user as UserData ?? null);
       
@@ -90,10 +92,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       if (error) throw error;
       
+      // Success case - the onAuthStateChange handler will update the user state
+      console.log("Login successful:", data.user?.email);
       toast.success('Welcome back!');
+      return;
+      
     } catch (err: any) {
       setError(err.message || 'An error occurred during login');
-      console.error(err);
+      console.error("Login error:", err);
+      throw err; // Re-throw to let components handle the error
     } finally {
       setLoading(false);
     }

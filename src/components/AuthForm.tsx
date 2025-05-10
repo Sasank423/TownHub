@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -20,10 +19,16 @@ export const AuthForm: React.FC = () => {
     password: '',
     confirmPassword: '',
   });
-  const { login, forgotPassword, error } = useAuth();
+  const { login, forgotPassword, error: authError } = useAuth();
   const navigate = useNavigate();
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [resetSent, setResetSent] = useState(false);
+  const [error, setError] = useState<string | null>(authError);
+
+  // Keep local error state in sync with auth context error
+  React.useEffect(() => {
+    setError(authError);
+  }, [authError]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
@@ -35,12 +40,14 @@ export const AuthForm: React.FC = () => {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setError(null);
     
     try {
       await login(formData.email, formData.password);
-      // Navigate will happen via the onAuthStateChange handler in AuthContext
-    } catch (err) {
-      console.error(err);
+      // Navigate will happen via the useEffect in Login.tsx
+    } catch (err: any) {
+      console.error("Form login error:", err);
+      setError(err.message || "Login failed");
     } finally {
       setIsLoading(false);
     }
@@ -55,6 +62,8 @@ export const AuthForm: React.FC = () => {
     }
 
     setIsLoading(true);
+    setError(null);
+    
     try {
       const { data, error } = await supabase.auth.signUp({
         email: formData.email,
@@ -72,6 +81,7 @@ export const AuthForm: React.FC = () => {
       setActiveTab('login');
     } catch (err: any) {
       toast.error(err.message || 'Failed to create account');
+      setError(err.message || 'Failed to create account');
       console.error(err);
     } finally {
       setIsLoading(false);
@@ -81,6 +91,7 @@ export const AuthForm: React.FC = () => {
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setError(null);
     
     try {
       const success = await forgotPassword(formData.email);
@@ -90,8 +101,9 @@ export const AuthForm: React.FC = () => {
       } else {
         toast.error('Failed to send reset email');
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
+      setError(err.message || 'An error occurred');
       toast.error('An error occurred');
     } finally {
       setIsLoading(false);
@@ -100,14 +112,19 @@ export const AuthForm: React.FC = () => {
 
   const loginDemo = async (role: 'member' | 'librarian') => {
     setIsLoading(true);
+    setError(null);
+    
     try {
+      // For demo purposes, we're using test accounts
       if (role === 'member') {
-        await login('john@example.com', 'password');
+        await login('member@example.com', 'password123');
       } else {
-        await login('jane@example.com', 'password');
+        await login('librarian@example.com', 'password123');
       }
-    } catch (err) {
-      console.error(err);
+      // Navigation will be handled by useEffect in Login.tsx
+    } catch (err: any) {
+      console.error("Demo login error:", err);
+      setError(err.message || "Demo login failed");
     } finally {
       setIsLoading(false);
     }

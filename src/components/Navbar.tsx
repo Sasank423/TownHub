@@ -91,11 +91,11 @@ export const Navbar: React.FC = () => {
                   <button className="flex items-center space-x-2 p-2 rounded-full hover:bg-secondary transition-colors">
                     <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
                       <span className="text-primary-foreground font-semibold">
-                        {user.name.charAt(0)}
+                        {user.name ? user.name.charAt(0) : 'U'}
                       </span>
                     </div>
                     <span className="hidden md:inline text-sm font-medium">
-                      {user.name}
+                      {user.name || 'User'}
                     </span>
                   </button>
                 </DropdownMenuTrigger>

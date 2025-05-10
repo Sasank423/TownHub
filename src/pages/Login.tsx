@@ -1,10 +1,22 @@
 
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { AuthForm } from '../components/AuthForm';
 import { ThemeToggle } from '../components/ThemeToggle';
+import { useAuth } from '../contexts/AuthContext';
 
 const Login = () => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (user) {
+      console.log("User already logged in, redirecting to dashboard");
+      navigate(user.role === 'librarian' ? '/librarian' : '/member');
+    }
+  }, [user, navigate]);
+
   return (
     <div className="min-h-screen bg-background dark:bg-background flex flex-col">
       <div className="container mx-auto px-4 py-8">
