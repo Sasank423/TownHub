@@ -76,25 +76,14 @@ export const AuthForm: React.FC = () => {
         options: {
           data: {
             name: formData.name,
-          },
-          // No need for email verification
-          emailRedirectTo: undefined
+          }
         }
       });
       
       if (error) throw error;
 
-      // Since we removed email verification, we can directly show success and switch to login tab
-      toast.success('Account created successfully! You can now log in.');
+      toast.success('Account created successfully! Please check your email for verification.');
       setActiveTab('login');
-      
-      // Clear the form data for signup
-      setFormData({
-        ...formData,
-        name: '',
-        password: '',
-        confirmPassword: '',
-      });
     } catch (err: any) {
       toast.error(err.message || 'Failed to create account');
       setError(err.message || 'Failed to create account');
