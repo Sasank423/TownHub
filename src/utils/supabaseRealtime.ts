@@ -1,5 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
+import { ReservationStatus } from '../types/models';
 
 const REALTIME_LISTEN_DELAY = 2000;
 
@@ -9,22 +10,27 @@ const subscribeToTable = (
   event: 'INSERT' | 'UPDATE' | 'DELETE' | '*',
   callback: (payload: any) => void
 ) => {
-  const userId = supabase.auth.getUser().then(({ data }) => data.user?.id);
-  if (!userId) return null;
+  // Get current user ID
+  const userPromise = supabase.auth.getUser().then(({ data }) => data.user?.id);
+  
+  // Create and return the subscription channel
+  return userPromise.then(userId => {
+    if (!userId) return null;
 
-  const channel = supabase
-    .channel(`public:${table}`)
-    .on(
-      'postgres_changes',
-      { event: event, schema: 'public', table: table },
-      (payload) => {
-        console.log('Change received!', payload);
-        callback(payload);
-      }
-    )
-    .subscribe();
+    const channel = supabase
+      .channel(`public:${table}`)
+      .on(
+        'postgres_changes',
+        { event, schema: 'public', table },
+        (payload) => {
+          console.log('Change received!', payload);
+          callback(payload);
+        }
+      )
+      .subscribe();
 
-  return channel;
+    return channel;
+  });
 };
 
 // Specific subscription for notifications with proper callback type
@@ -105,8 +111,26 @@ const removeSubscription = async (channel: any) => {
 // Alias for removeSubscription to match imports in components
 const unsubscribe = removeSubscription;
 
+// Define interface for the activity data returned from the query
+interface ActivityWithReservation {
+  id: string;
+  user_id: string;
+  action: string;
+  description: string;
+  item_type: string | null;
+  user_name: string | null;
+  reservations: {
+    id: string;
+    title: string;
+    start_date: string;
+    end_date: string;
+    status: ReservationStatus;
+    [key: string]: any;
+  } | null;
+}
+
 // Function to get pending book requests
-const getPendingBookRequests = async () => {
+const getPendingBookRequests = async (): Promise<ActivityWithReservation[]> => {
   const { data, error } = await supabase
     .from('activities')
     .select(`
@@ -116,7 +140,13 @@ const getPendingBookRequests = async () => {
       description,
       item_type,
       user_name,
-      reservations:reservations(*)
+      reservations (
+        id,
+        title,
+        start_date,
+        end_date,
+        status
+      )
     `)
     .eq('action', 'reservation')
     .eq('is_processed', false)
@@ -131,7 +161,7 @@ const getPendingBookRequests = async () => {
 };
 
 // Function to update reservation status
-const updateReservationStatus = async (reservationId: string, status: string, activityId: string) => {
+const updateReservationStatus = async (reservationId: string, status: ReservationStatus, activityId: string) => {
   try {
     // Update the reservation status
     const { error: reservationError } = await supabase

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { CheckCircle, Book, Home, Clock, X, Search, Filter, CalendarRange } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -13,12 +12,30 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { getPendingBookRequests, updateReservationStatus } from '../utils/supabaseRealtime';
-import { subscribeToTable, unsubscribe } from '../utils/supabaseRealtime';
+import { 
+  getPendingBookRequests, 
+  updateReservationStatus,
+  subscribeToTable, 
+  unsubscribe 
+} from '../utils/supabaseRealtime';
 import { RealtimeChannel } from '@supabase/supabase-js';
+import { ReservationStatus } from '../types/models';
+
+// Define interfaces for the activity and reservation data
+interface FormattedReservation {
+  id: string;
+  activityId: string;
+  userId: string;
+  title: string;
+  itemType: string;
+  startDate: string;
+  endDate: string;
+  userName: string;
+  status: ReservationStatus;
+}
 
 export const ApprovalQueue: React.FC = () => {
-  const [pendingReservations, setPendingReservations] = useState([]);
+  const [pendingReservations, setPendingReservations] = useState<FormattedReservation[]>([]);
   const [selectedReservations, setSelectedReservations] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [dateFilter, setDateFilter] = useState<string>('all');
@@ -36,7 +53,7 @@ export const ApprovalQueue: React.FC = () => {
         const requests = await getPendingBookRequests();
         console.log("Pending requests:", requests);
         
-        const formattedRequests = requests.map(req => ({
+        const formattedRequests: FormattedReservation[] = requests.map(req => ({
           id: req.reservations?.id || '',
           activityId: req.id,
           userId: req.user_id,
@@ -65,12 +82,16 @@ export const ApprovalQueue: React.FC = () => {
     loadPendingRequests();
 
     // Set up real-time subscription for activities
-    channel = subscribeToTable('activities', 'INSERT', (payload) => {
-      console.log("New activity:", payload);
-      if (payload.new && payload.new.action === 'reservation' && !payload.new.is_processed) {
-        loadPendingRequests();
-      }
-    });
+    const setupChannel = async () => {
+      channel = await subscribeToTable('activities', 'INSERT', (payload) => {
+        console.log("New activity:", payload);
+        if (payload.new && payload.new.action === 'reservation' && !payload.new.is_processed) {
+          loadPendingRequests();
+        }
+      });
+    };
+    
+    setupChannel();
 
     // Cleanup
     return () => {
@@ -426,7 +447,7 @@ export const ApprovalQueue: React.FC = () => {
 };
 
 interface ReservationListProps {
-  reservations: any[];
+  reservations: FormattedReservation[];
   selectedReservations: string[];
   onSelectReservation: (id: string) => void;
   onApprove: (id: string, activityId: string) => void;
