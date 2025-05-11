@@ -12,7 +12,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { 
+import { supabase } from '@/integrations/supabase/client';
+import {
   getPendingBookRequests, 
   updateReservationStatus,
   subscribeToTable, 
@@ -53,6 +54,22 @@ export const ApprovalQueue: React.FC = () => {
         const requests = await getPendingBookRequests();
         console.log("Pending requests:", requests);
         
+        if (requests.length === 0) {
+          console.log("No pending requests found. Checking database directly...");
+          
+          // Fallback: Direct database query for debugging
+          const { data: directData, error: directError } = await supabase
+            .from('reservations')
+            .select('*')
+            .eq('status', 'Pending');
+            
+          if (directError) {
+            console.error("Direct query error:", directError);
+          } else {
+            console.log("Direct query results:", directData);
+          }
+        }
+        
         const formattedRequests: FormattedReservation[] = requests.map(req => ({
           id: req.reservations?.id || '',
           activityId: req.id,
@@ -61,7 +78,7 @@ export const ApprovalQueue: React.FC = () => {
           itemType: req.item_type || 'book',
           startDate: req.reservations?.start_date || new Date().toISOString(),
           endDate: req.reservations?.end_date || '',
-          userName: req.user_name || `User #${req.user_id}`,
+          userName: req.user_name || `User #${req.user_id.substring(0, 8)}`,
           status: req.reservations?.status || 'Pending'
         }));
         
@@ -99,46 +116,68 @@ export const ApprovalQueue: React.FC = () => {
     };
   }, [toast]);
 
-  const handleApprove = async (id: string, activityId: string) => {
+  const handleApprove = async (reservationId: string, activityId: string) => {
     try {
-      const success = await updateReservationStatus(id, 'Approved', activityId);
+      console.log(`Approving individual reservation ${reservationId} with activityId ${activityId}`);
+      
+      // Check if activityId is undefined or null and log it
+      if (!activityId) {
+        console.warn(`Missing activityId for reservation ${reservationId}, attempting to approve anyway`);
+      }
+      
+      const success = await updateReservationStatus(reservationId, 'Approved', activityId);
+      
       if (success) {
-        setPendingReservations(prev => prev.filter(res => res.id !== id));
+        setPendingReservations(prev => 
+          prev.filter(res => res.id !== reservationId)
+        );
+        
         toast({
           title: "Reservation approved",
           description: "The reservation has been approved successfully.",
         });
       } else {
-        throw new Error("Failed to update reservation");
+        throw new Error('Failed to update reservation status');
       }
     } catch (error) {
       console.error("Error approving reservation:", error);
       toast({
         title: "Error",
-        description: "Failed to approve the reservation",
+        description: "Failed to approve reservation",
         variant: "destructive",
       });
     }
   };
   
-  const handleDecline = async (id: string, activityId: string) => {
+  const handleDecline = async (reservationId: string, activityId: string) => {
     try {
-      const success = await updateReservationStatus(id, 'Declined', activityId);
+      console.log(`Declining individual reservation ${reservationId} with activityId ${activityId}`);
+      
+      // Check if activityId is undefined or null and log it
+      if (!activityId) {
+        console.warn(`Missing activityId for reservation ${reservationId}, attempting to decline anyway`);
+      }
+      
+      const success = await updateReservationStatus(reservationId, 'Declined', activityId);
+      
       if (success) {
-        setPendingReservations(prev => prev.filter(res => res.id !== id));
+        setPendingReservations(prev => 
+          prev.filter(res => res.id !== reservationId)
+        );
+        
         toast({
           title: "Reservation declined",
           description: "The reservation has been declined.",
           variant: "destructive",
         });
       } else {
-        throw new Error("Failed to update reservation");
+        throw new Error('Failed to update reservation status');
       }
     } catch (error) {
       console.error("Error declining reservation:", error);
       toast({
         title: "Error",
-        description: "Failed to decline the reservation",
+        description: "Failed to decline reservation",
         variant: "destructive",
       });
     }
@@ -150,27 +189,36 @@ export const ApprovalQueue: React.FC = () => {
     try {
       // Find the selected reservations with their activity IDs
       const toApprove = pendingReservations.filter(res => selectedReservations.includes(res.id));
+      console.log('Batch approving reservations:', toApprove);
+      
+      let successCount = 0;
       
       // Process each reservation
       for (const res of toApprove) {
-        await updateReservationStatus(res.id, 'Approved', res.activityId);
+        console.log(`Approving reservation ${res.id} with activityId ${res.activityId}`);
+        const success = await updateReservationStatus(res.id, 'Approved', res.activityId);
+        if (success) successCount++;
       }
       
-      setPendingReservations(prev => 
-        prev.filter(res => !selectedReservations.includes(res.id))
-      );
-      
-      toast({
-        title: `${selectedReservations.length} reservations approved`,
-        description: "The selected reservations have been approved successfully.",
-      });
-      
-      setSelectedReservations([]);
+      if (successCount > 0) {
+        setPendingReservations(prev => 
+          prev.filter(res => !selectedReservations.includes(res.id))
+        );
+        
+        toast({
+          title: `${successCount} reservations approved`,
+          description: "The selected reservations have been approved successfully.",
+        });
+        
+        setSelectedReservations([]);
+      } else {
+        throw new Error('No reservations were successfully approved');
+      }
     } catch (error) {
       console.error("Error in batch approval:", error);
       toast({
         title: "Error",
-        description: "Failed to process some approvals",
+        description: "Failed to process approvals",
         variant: "destructive",
       });
     }
@@ -182,28 +230,37 @@ export const ApprovalQueue: React.FC = () => {
     try {
       // Find the selected reservations with their activity IDs
       const toDecline = pendingReservations.filter(res => selectedReservations.includes(res.id));
+      console.log('Batch declining reservations:', toDecline);
+      
+      let successCount = 0;
       
       // Process each reservation
       for (const res of toDecline) {
-        await updateReservationStatus(res.id, 'Declined', res.activityId);
+        console.log(`Declining reservation ${res.id} with activityId ${res.activityId}`);
+        const success = await updateReservationStatus(res.id, 'Declined', res.activityId);
+        if (success) successCount++;
       }
       
-      setPendingReservations(prev => 
-        prev.filter(res => !selectedReservations.includes(res.id))
-      );
-      
-      toast({
-        title: `${selectedReservations.length} reservations declined`,
-        description: "The selected reservations have been declined.",
-        variant: "destructive",
-      });
-      
-      setSelectedReservations([]);
+      if (successCount > 0) {
+        setPendingReservations(prev => 
+          prev.filter(res => !selectedReservations.includes(res.id))
+        );
+        
+        toast({
+          title: `${successCount} reservations declined`,
+          description: "The selected reservations have been declined.",
+          variant: "destructive",
+        });
+        
+        setSelectedReservations([]);
+      } else {
+        throw new Error('No reservations were successfully declined');
+      }
     } catch (error) {
       console.error("Error in batch decline:", error);
       toast({
         title: "Error",
-        description: "Failed to process some declines",
+        description: "Failed to process declines",
         variant: "destructive",
       });
     }
@@ -517,14 +574,22 @@ const ReservationList: React.FC<ReservationListProps> = ({
               </div>
               <div className="flex space-x-2">
                 <button 
-                  onClick={() => onDecline(reservation.id, reservation.activityId)}
+                  type="button"
+                  onClick={() => {
+                    console.log('Declining reservation:', reservation);
+                    onDecline(reservation.id, reservation.activityId);
+                  }}
                   className="p-2 text-gray-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 dark:hover:text-red-400 rounded-full transition-colors"
                   aria-label="Decline"
                 >
                   <X className="h-5 w-5" />
                 </button>
                 <button 
-                  onClick={() => onApprove(reservation.id, reservation.activityId)}
+                  type="button"
+                  onClick={() => {
+                    console.log('Approving reservation:', reservation);
+                    onApprove(reservation.id, reservation.activityId);
+                  }}
                   className="p-2 text-gray-500 hover:text-green-500 hover:bg-green-50 dark:hover:bg-green-900/20 dark:hover:text-green-400 rounded-full transition-colors"
                   aria-label="Approve"
                 >

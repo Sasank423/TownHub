@@ -125,6 +125,51 @@ interface ActivityWithReservation {
 
 // Function to get pending book requests
 const getPendingBookRequests = async (): Promise<ActivityWithReservation[]> => {
+  // Directly get pending reservations
+  const { data: reservationData, error: reservationError } = await supabase
+    .from('reservations')
+    .select(`
+      id,
+      user_id,
+      title,
+      start_date,
+      end_date,
+      status,
+      item_id,
+      item_type
+    `)
+    .eq('status', 'Pending')
+    .order('created_at', { ascending: false });
+
+  if (reservationError) {
+    console.error("Error fetching pending reservations:", reservationError);
+    return [];
+  }
+
+  // If we have pending reservations, format them to match the expected interface
+  if (reservationData && reservationData.length > 0) {
+    console.log("Found pending reservations:", reservationData);
+    
+    // Format the reservations to match the ActivityWithReservation interface
+    // without trying to look up user details, which might be causing issues
+    return reservationData.map(res => ({
+      id: `activity-${res.id}`, // Generate a unique activity ID
+      user_id: res.user_id,
+      action: 'reservation',
+      description: `Reservation for ${res.title}`,
+      item_type: res.item_type || 'book',
+      user_name: `User ${res.user_id.substring(0, 8)}`,
+      reservations: {
+        id: res.id,
+        title: res.title,
+        start_date: res.start_date,
+        end_date: res.end_date,
+        status: res.status as ReservationStatus
+      }
+    }));
+  }
+
+  // Fallback: Try the original method of getting pending requests from activities
   const { data, error } = await supabase
     .from('activities')
     .select(`
@@ -147,7 +192,7 @@ const getPendingBookRequests = async (): Promise<ActivityWithReservation[]> => {
     .order('timestamp', { ascending: false });
 
   if (error) {
-    console.error("Error fetching pending book requests:", error);
+    console.error("Error fetching pending book requests from activities:", error);
     return [];
   }
 
@@ -179,25 +224,42 @@ const updateReservationStatus = async (
   activityId: string
 ): Promise<boolean> => {
   try {
+    console.log(`Updating reservation ${reservationId} to status: ${status}`);
+    
     // Update the reservation status
     const { error: reservationError } = await supabase
       .from('reservations')
       .update({ status })
       .eq('id', reservationId);
 
-    if (reservationError) throw reservationError;
+    if (reservationError) {
+      console.error('Reservation update error:', reservationError);
+      throw reservationError;
+    }
 
-    // Mark the activity as processed
-    const { error: activityError } = await supabase
-      .from('activities')
-      .update({ is_processed: true })
-      .eq('id', activityId);
+    // Only try to update the activity if it's a valid ID (not our generated one)
+    if (activityId && !activityId.startsWith('activity-')) {
+      console.log(`Updating activity ${activityId} to processed`);
+      // Mark the activity as processed
+      const { error: activityError } = await supabase
+        .from('activities')
+        .update({ is_processed: true })
+        .eq('id', activityId);
 
-    if (activityError) throw activityError;
+      if (activityError) {
+        console.error('Activity update error:', activityError);
+        // Don't throw here, we still want to consider the reservation update a success
+      } else {
+        console.log(`Successfully updated activity ${activityId}`);
+      }
+    } else {
+      console.log(`Skipping activity update for ${activityId} (invalid or generated ID)`);
+    }
 
+    console.log(`Successfully updated reservation ${reservationId} to ${status}`);
     return true;
   } catch (error) {
-    console.error(`Error updating reservation ${reservationId} status:`, error);
+    console.error('Error updating reservation status:', error);
     return false;
   }
 };
