@@ -210,6 +210,106 @@ export type Database = {
         }
         Relationships: []
       }
+      reading_goals: {
+        Row: {
+          created_at: string | null
+          id: string
+          target_books: number
+          updated_at: string | null
+          user_id: string
+          year: number
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          target_books: number
+          updated_at?: string | null
+          user_id: string
+          year: number
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          target_books?: number
+          updated_at?: string | null
+          user_id?: string
+          year?: number
+        }
+        Relationships: []
+      }
+      reading_progress: {
+        Row: {
+          book_id: string
+          id: string
+          last_page_read: number | null
+          last_updated: string | null
+          progress_percentage: number
+          user_id: string
+        }
+        Insert: {
+          book_id: string
+          id?: string
+          last_page_read?: number | null
+          last_updated?: string | null
+          progress_percentage: number
+          user_id: string
+        }
+        Update: {
+          book_id?: string
+          id?: string
+          last_page_read?: number | null
+          last_updated?: string | null
+          progress_percentage?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reading_progress_book_id_fkey"
+            columns: ["book_id"]
+            isOneToOne: false
+            referencedRelation: "books"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reading_sessions: {
+        Row: {
+          book_id: string
+          end_time: string | null
+          id: string
+          notes: string | null
+          pages_read: number | null
+          start_time: string
+          user_id: string
+        }
+        Insert: {
+          book_id: string
+          end_time?: string | null
+          id?: string
+          notes?: string | null
+          pages_read?: number | null
+          start_time: string
+          user_id: string
+        }
+        Update: {
+          book_id?: string
+          end_time?: string | null
+          id?: string
+          notes?: string | null
+          pages_read?: number | null
+          start_time?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reading_sessions_book_id_fkey"
+            columns: ["book_id"]
+            isOneToOne: false
+            referencedRelation: "books"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       reservations: {
         Row: {
           created_at: string
