@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -27,7 +28,6 @@ export const AuthForm: React.FC = () => {
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [resetSent, setResetSent] = useState(false);
   const [error, setError] = useState<string | null>(authError);
-  const [emailNotConfirmedUser, setEmailNotConfirmedUser] = useState<string | null>(null);
 
   // Keep local error state in sync with auth context error
   React.useEffect(() => {
@@ -45,55 +45,14 @@ export const AuthForm: React.FC = () => {
     e.preventDefault();
     setIsLoading(true);
     setError(null);
-    setEmailNotConfirmedUser(null);
     
     try {
       console.log("Login attempt with:", formData.email);
-      
-      // Try to login first
       await login(formData.email, formData.password);
       // Navigate will happen via the useEffect in Login.tsx
     } catch (err: any) {
       console.error("Form login error:", err);
-      
-      // Check if error is email not confirmed
-      if (err.message && err.message.toLowerCase().includes('email not confirmed')) {
-        console.log("Email not confirmed, attempting auto-confirmation");
-        setEmailNotConfirmedUser(formData.email);
-        
-        // Try to automatically confirm the email
-        try {
-          // Get user by email
-          const { data: { users }, error: usersError } = await supabase.auth.admin.listUsers({
-            filters: {
-              email: formData.email
-            }
-          });
-          
-          if (usersError) throw usersError;
-          
-          if (users && users.length > 0) {
-            // Update user to be confirmed
-            const { error: updateError } = await supabase.auth.admin.updateUserById(
-              users[0].id,
-              { email_confirm: true }
-            );
-            
-            if (updateError) throw updateError;
-            
-            // Try login again
-            await login(formData.email, formData.password);
-            toast.success("Account confirmed automatically!");
-          } else {
-            throw new Error("User not found");
-          }
-        } catch (confirmError) {
-          console.error("Could not auto-confirm:", confirmError);
-          setError("Email not confirmed. Please contact support or try again later.");
-        }
-      } else {
-        setError(err.message || "Login failed");
-      }
+      setError(err.message || "Login failed");
     } finally {
       setIsLoading(false);
     }
@@ -249,15 +208,6 @@ export const AuthForm: React.FC = () => {
               {error && (
                 <div className="p-3 bg-destructive/10 text-destructive text-sm rounded-md border border-destructive/20 shadow-sm animate-fade-in">
                   {error}
-                </div>
-              )}
-              
-              {emailNotConfirmedUser && (
-                <div className="p-3 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 text-sm rounded-md border border-amber-200 dark:border-amber-700/30 shadow-sm animate-fade-in">
-                  The email for {emailNotConfirmedUser} has not been confirmed yet. We attempted automatic confirmation but it failed.
-                  <div className="mt-1 text-xs">
-                    For development purposes, you can disable email confirmation in the Supabase dashboard under Authentication → Settings → Email Auth.
-                  </div>
                 </div>
               )}
 
