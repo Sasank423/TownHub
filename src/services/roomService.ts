@@ -157,6 +157,8 @@ export const searchRooms = async (
     date?: string;
   } = {}
 ): Promise<Room[]> => {
+  console.log('Searching rooms with query:', query, 'and filters:', filters);
+  
   let roomsQuery = supabase
     .from('rooms')
     .select('*');
@@ -171,18 +173,56 @@ export const searchRooms = async (
     roomsQuery = roomsQuery.gte('capacity', filters.capacity);
   }
 
-  // Apply amenities filter
-  if (filters.amenities && filters.amenities.length > 0) {
+  // Apply amenities filter - commenting out for now to get all rooms
+  /* if (filters.amenities && filters.amenities.length > 0) {
+    // Check if amenities is stored as an array or as a JSON string
     filters.amenities.forEach(amenity => {
-      roomsQuery = roomsQuery.contains('amenities', [amenity]);
+      roomsQuery = roomsQuery.or(`amenities.cs.{${amenity}},amenities.cs.["${amenity}"]`);
     });
-  }
+  } */
 
+  // Execute the query and log results
+  console.log('Executing Supabase query:', roomsQuery);
   const { data: roomsData, error: roomsError } = await roomsQuery;
+  
+  // Log the raw data for debugging
+  console.log('Raw room data from Supabase:', roomsData);
 
   if (roomsError) {
     console.error("Error searching rooms:", roomsError);
     return [];
+  }
+  
+  console.log('Found rooms data:', roomsData?.length || 0, 'rooms');
+  
+  // If no rooms found, try a simpler query to check if any rooms exist at all
+  if (!roomsData || roomsData.length === 0) {
+    console.log('No rooms found matching the current filters');
+    
+    // Check if there are any rooms in the database at all
+    const { data: allRooms, error: allRoomsError } = await supabase
+      .from('rooms')
+      .select('count');
+      
+    if (allRoomsError) {
+      console.error("Error checking room count:", allRoomsError);
+    } else {
+      const roomCount = allRooms?.[0]?.count || 0;
+      console.log('Total rooms in database:', roomCount);
+      
+      // If no rooms exist at all, add sample rooms
+      if (roomCount === 0) {
+        console.log('No rooms found in database. Adding sample rooms...');
+        await addSampleRooms();
+        
+        // Try fetching again after adding sample data
+        const { data: newRooms } = await supabase.from('rooms').select('*');
+        if (newRooms && newRooms.length > 0) {
+          console.log('Successfully added and retrieved sample rooms:', newRooms.length);
+          return formatRooms(newRooms);
+        }
+      }
+    }
   }
 
   // Get availability for each room
@@ -239,7 +279,60 @@ export const searchRooms = async (
   return rooms;
 };
 
+// Format room data consistently
+const formatRooms = (roomsData: any[]): Room[] => {
+  return roomsData.map(room => ({
+    id: room.id,
+    name: room.name,
+    description: room.description || '',
+    capacity: room.capacity,
+    location: room.location || '',
+    amenities: room.amenities || [],
+    images: room.images || ['https://images.pexels.com/photos/1329571/pexels-photo-1329571.jpeg'],
+    availabilitySchedule: [],
+    floorMapPosition: parseFloorMapPosition(room.floor_map_position)
+  }));
+};
+
+// Add sample rooms to the database if none exist
+const addSampleRooms = async (): Promise<void> => {
+  const sampleRooms = [
+    {
+      name: 'Study Room A',
+      description: 'A quiet study room for individual or small group study sessions.',
+      capacity: 4,
+      location: 'First Floor, East Wing',
+      amenities: ['wifi', 'whiteboard', 'silence'] as RoomAmenity[],
+      images: ['https://images.pexels.com/photos/1329571/pexels-photo-1329571.jpeg']
+    },
+    {
+      name: 'Collaboration Space',
+      description: 'Open space designed for group projects and collaborative work.',
+      capacity: 12,
+      location: 'Second Floor, Central Area',
+      amenities: ['wifi', 'projector', 'whiteboard', 'videoconferencing'] as RoomAmenity[],
+      images: ['https://images.pexels.com/photos/1181406/pexels-photo-1181406.jpeg']
+    },
+    {
+      name: 'Computer Lab',
+      description: 'Room equipped with desktop computers and specialized software.',
+      capacity: 20,
+      location: 'First Floor, West Wing',
+      amenities: ['wifi', 'computers', 'printer'] as RoomAmenity[],
+      images: ['https://images.pexels.com/photos/267507/pexels-photo-267507.jpeg']
+    }
+  ];
+
+  for (const room of sampleRooms) {
+    const { error } = await supabase.from('rooms').insert(room);
+    if (error) {
+      console.error('Error adding sample room:', error);
+    }
+  }
+};
+
 export const getAllAmenities = async (): Promise<RoomAmenity[]> => {
+  console.log('Fetching all amenities');
   const { data, error } = await supabase
     .from('rooms')
     .select('amenities');
@@ -257,5 +350,13 @@ export const getAllAmenities = async (): Promise<RoomAmenity[]> => {
     }
   });
 
-  return Array.from(amenitiesSet).sort() as RoomAmenity[];
+  const amenities = Array.from(amenitiesSet).sort() as RoomAmenity[];
+  console.log('Found amenities:', amenities);
+  
+  // If no amenities found, return default set
+  if (amenities.length === 0) {
+    return ['wifi', 'projector', 'whiteboard', 'computers', 'videoconferencing', 'printer', 'study-pods', 'silence'];
+  }
+  
+  return amenities;
 };

@@ -11,18 +11,20 @@ import { supabase } from "@/integrations/supabase/client";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import ForgotPassword from "./pages/ForgotPassword";
-import MemberDashboard from "./pages/MemberDashboard";
-import LibrarianDashboard from "./pages/LibrarianDashboard";
+import MemberDashboard from './pages/MemberDashboard';
+import PendingRequests from './pages/PendingRequests';
+import LibrarianDashboard from './pages/LibrarianDashboard';
 import Catalog from "./pages/Catalog";
 import BookDetails from "./pages/BookDetails";
 import Rooms from "./pages/Rooms";
 import RoomDetails from "./pages/RoomDetails";
 import ReservationWizard from "./pages/ReservationWizard";
 import NotFound from "./pages/NotFound";
-import Analytics from "./pages/Analytics";
 import Profile from "./pages/Profile";
 import ReportIssue from "./pages/ReportIssue";
 import AddBooks from "./pages/AddBooks";
+import RoomManagement from "./pages/RoomManagement";
+import ActiveReservations from "./pages/ActiveReservations";
 
 const queryClient = new QueryClient();
 
@@ -40,19 +42,10 @@ const ProtectedRoute = ({ element, requiredRole }: { element: React.ReactNode, r
   }
   
   // Only redirect if the user's role doesn't match the required role
-  // AND we're not already on a page that matches their role
   if (requiredRole && user.role !== requiredRole) {
-    const currentPath = location.pathname;
+    // Determine the appropriate home path based on user role
     const userHomePath = user.role === 'librarian' ? '/librarian' : '/member';
-    
-    // Check if we're already on a path that's appropriate for the user's role
-    // This prevents unnecessary redirects when navigating within role-specific pages
-    const isAlreadyOnRolePage = (user.role === 'librarian' && currentPath.includes('librarian')) || 
-                              (user.role === 'member' && currentPath.includes('member'));
-    
-    if (!isAlreadyOnRolePage) {
-      return <Navigate to={userHomePath} replace />;
-    }
+    return <Navigate to={userHomePath} replace />;
   }
   
   return <>{element}</>;
@@ -69,10 +62,13 @@ const AppRoutes = () => {
         
         {/* Member routes */}
         <Route path="/member" element={<ProtectedRoute element={<MemberDashboard />} requiredRole="member" />} />
+        <Route path="/pending-requests" element={<ProtectedRoute element={<PendingRequests />} requiredRole="member" />} />
+        <Route path="/active-reservations" element={<ProtectedRoute element={<ActiveReservations />} requiredRole="member" />} />
         
         {/* Librarian routes */}
         <Route path="/librarian" element={<ProtectedRoute element={<LibrarianDashboard />} requiredRole="librarian" />} />
         <Route path="/add-books" element={<ProtectedRoute element={<AddBooks />} requiredRole="librarian" />} />
+        <Route path="/room-management" element={<ProtectedRoute element={<RoomManagement />} requiredRole="librarian" />} />
         
         {/* Book routes */}
         <Route path="/catalog" element={<ProtectedRoute element={<Catalog />} />} />
@@ -85,8 +81,6 @@ const AppRoutes = () => {
         {/* Reservation routes */}
         <Route path="/reserve/:type/:id" element={<ProtectedRoute element={<ReservationWizard />} />} />
         
-        {/* Analytics route */}
-        <Route path="/analytics" element={<ProtectedRoute element={<Analytics />} />} />
         
         {/* Profile route */}
         <Route path="/profile" element={<ProtectedRoute element={<Profile />} />} />

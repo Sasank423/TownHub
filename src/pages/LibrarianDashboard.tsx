@@ -1,11 +1,11 @@
-
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { DashboardLayout } from '../components/DashboardLayout';
 import { StatCard } from '../components/StatCard';
 import { ApprovalQueue } from '../components/ApprovalQueue';
 import { ActivityFeed } from '../components/ActivityFeed';
 import { ReservationHistory } from '../components/ReservationHistory';
-import { Book, Users, Calendar, Home, ArrowRight, ChevronDown, ChevronUp, Clock } from 'lucide-react';
+import { Book, Users, Calendar, Home, ArrowRight, ChevronDown, ChevronUp, Clock, BarChart2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/custom-tabs';
 import { supabase } from '../integrations/supabase/client';
@@ -14,6 +14,7 @@ import { getPendingBookRequests } from '../utils/supabaseRealtime';
 const LibrarianDashboard = () => {
   const [stats, setStats] = useState({
     totalBooks: 0,
+    uniqueBookTitles: 0,
     totalRooms: 0,
     activeReservations: 0,
     availableBooks: 0,
@@ -24,16 +25,24 @@ const LibrarianDashboard = () => {
   const [loading, setLoading] = useState(true);
   
   useEffect(() => {
+    // Function to fetch all statistics
     const fetchStats = async () => {
       try {
         setLoading(true);
         
-        // Get total books count
+        // Get total books count - using book_copies to get actual physical books
         const { count: totalBooks, error: booksError } = await supabase
-          .from('books')
+          .from('book_copies')
           .select('*', { count: 'exact', head: true });
           
         if (booksError) throw booksError;
+        
+        // For unique book titles count (optional)
+        const { count: uniqueBookTitles, error: uniqueTitlesError } = await supabase
+          .from('books')
+          .select('*', { count: 'exact', head: true });
+          
+        if (uniqueTitlesError) throw uniqueTitlesError;
         
         // Get total rooms count
         const { count: totalRooms, error: roomsError } = await supabase
@@ -42,11 +51,12 @@ const LibrarianDashboard = () => {
           
         if (roomsError) throw roomsError;
         
-        // Get active reservations count
+        // Get active reservations count (only Approved ones, not Pending)
         const { count: activeReservations, error: reservationsError } = await supabase
           .from('reservations')
           .select('*', { count: 'exact', head: true })
-          .in('status', ['Approved', 'Pending']);
+          .eq('status', 'Approved')
+          .gte('end_date', new Date().toISOString()); // Only count non-expired reservations
           
         if (reservationsError) throw reservationsError;
         
@@ -89,6 +99,7 @@ const LibrarianDashboard = () => {
         
         setStats({
           totalBooks: totalBooks || 0,
+          uniqueBookTitles: uniqueBookTitles || 0,
           totalRooms: totalRooms || 0,
           activeReservations: activeReservations || 0,
           availableBooks: availableBooks || 0,
@@ -104,12 +115,32 @@ const LibrarianDashboard = () => {
       }
     };
     
+    // Initial fetch
     fetchStats();
     
-    // Set up a refresh interval for stats (every 5 minutes)
-    const intervalId = setInterval(fetchStats, 5 * 60 * 1000);
+    // Set up real-time subscriptions for each relevant table
+    const bookChannel = supabase
+      .channel('book-changes')
+      .on('postgres_changes' as any, { event: '*', schema: 'public', table: 'book_copies' }, fetchStats)
+      .on('postgres_changes' as any, { event: '*', schema: 'public', table: 'books' }, fetchStats)
+      .subscribe();
+      
+    const roomChannel = supabase
+      .channel('room-changes')
+      .on('postgres_changes' as any, { event: '*', schema: 'public', table: 'rooms' }, fetchStats)
+      .subscribe();
+      
+    const reservationChannel = supabase
+      .channel('reservation-changes')
+      .on('postgres_changes' as any, { event: '*', schema: 'public', table: 'reservations' }, fetchStats)
+      .subscribe();
     
-    return () => clearInterval(intervalId);
+    // Clean up subscriptions when component unmounts
+    return () => {
+      supabase.removeChannel(bookChannel);
+      supabase.removeChannel(roomChannel);
+      supabase.removeChannel(reservationChannel);
+    };
   }, []);
   
   return (
@@ -126,11 +157,15 @@ const LibrarianDashboard = () => {
             </div>
 
             <div className="flex flex-wrap gap-3">
-              <Button className="gap-2" size="sm">
-                <Book size={16} /> Manage Catalog
+              <Button className="gap-2" size="sm" asChild>
+                <Link to="/add-books">
+                  <Book size={16} /> Manage Catalog
+                </Link>
               </Button>
-              <Button className="gap-2" size="sm" variant="outline">
-                <Calendar size={16} /> Room Schedule
+              <Button className="gap-2" size="sm" variant="outline" asChild>
+                <Link to="/room-management">
+                  <Calendar size={16} /> Room Management
+                </Link>
               </Button>
               <Button className="gap-2" size="sm" variant="outline">
                 <Users size={16} /> Member Management
@@ -159,7 +194,9 @@ const LibrarianDashboard = () => {
               value={stats.totalBooks}
               icon={Book}
               color="blue"
-              description="Library collection"
+              description="Physical copies available"
+              trend={stats.uniqueBookTitles > 0 ? "neutral" : undefined}
+              trendValue={stats.uniqueBookTitles > 0 ? `${stats.uniqueBookTitles} unique titles` : undefined}
             />
             <StatCard 
               title="Total Rooms"
@@ -173,7 +210,7 @@ const LibrarianDashboard = () => {
               value={stats.activeReservations}
               icon={Calendar}
               color="green"
-              description="Books and rooms"
+              description="Currently checked out"
             />
             <StatCard 
               title="Pending Approvals"

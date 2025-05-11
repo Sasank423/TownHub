@@ -14,24 +14,20 @@ type PostgresChangeEvent = 'INSERT' | 'UPDATE' | 'DELETE' | '*';
  */
 export const subscribeToTable = (
   table: string, 
-  event: PostgresChangeEvent = '*',
+  event: string,
   callback: (payload: any) => void
 ): RealtimeChannel => {
-  // Create a channel with a unique name for this subscription
-  const channel = supabase
+  return supabase
     .channel(`public:${table}`)
-    .on(
-      'postgres_changes', 
-      { 
-        event,
-        schema: 'public',
+    .on('postgres_changes' as any, 
+      {
+        event, 
+        schema: 'public', 
         table
-      },
+      }, 
       callback
     )
     .subscribe();
-  
-  return channel;
 };
 
 /**
@@ -175,24 +171,39 @@ export const updateReservationStatus = async (
  */
 export const getPendingBookRequests = async (): Promise<any[]> => {
   try {
-    const { data, error } = await supabase
-      .from('activities')
+    // First approach: Get directly from reservations table
+    const { data: reservationData, error: reservationError } = await supabase
+      .from('reservations')
       .select(`
         *,
-        reservations:item_id (
-          id,
-          status,
-          title,
-          start_date,
-          end_date
-        )
+        user:user_id (name, email)
       `)
-      .eq('action', 'reservation')
-      .eq('is_processed', false);
+      .eq('status', 'Pending');
 
-    if (error) throw error;
+    if (reservationError) throw reservationError;
     
-    return data || [];
+    // Format the data to match the expected structure
+    const formattedData = reservationData.map(reservation => ({
+      id: reservation.id,
+      activityId: reservation.id, // Using reservation ID as activity ID
+      user_id: reservation.user_id,
+      user_name: reservation.user?.name || `User #${reservation.user_id}`,
+      item_id: reservation.item_id,
+      item_type: reservation.item_type,
+      action: 'reservation',
+      description: reservation.title,
+      is_processed: false,
+      created_at: reservation.created_at,
+      reservations: {
+        id: reservation.id,
+        status: reservation.status,
+        title: reservation.title,
+        start_date: reservation.start_date,
+        end_date: reservation.end_date
+      }
+    }));
+    
+    return formattedData || [];
   } catch (error) {
     console.error('Error fetching pending book requests:', error);
     return [];

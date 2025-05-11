@@ -63,10 +63,9 @@ export const Navbar: React.FC = () => {
   return (
     <nav className="bg-background border-b border-border">
       <div className="container mx-auto px-4">
-        <div className="flex justify-between items-center py-4">
-          <div className="flex items-center space-x-8">
+        <div className="flex justify-between items-center py-1.5">
+          <div className="flex items-center space-x-6">
             <Link to="/" className="flex items-center space-x-2 font-bold">
-              <img src="/logo.svg" alt="TownBook Logo" className="h-8" />
               <span className="text-gradient-blue-green">TownBook</span>
             </Link>
             
@@ -92,38 +91,38 @@ export const Navbar: React.FC = () => {
                     <span>Browse Books</span>
                   </Link>
                 )}
-                <Link to="/rooms" className="text-foreground hover:text-primary transition-colors flex items-center gap-1">
+                <Link to={user?.role === 'librarian' ? "/room-management" : "/rooms"} className="text-foreground hover:text-primary transition-colors flex items-center gap-1">
                   <Calendar className="h-4 w-4" />
                   <span>Rooms</span>
                 </Link>
-                <Link to="/analytics" className="text-foreground hover:text-primary transition-colors flex items-center gap-1">
-                  <BarChart2 className="h-4 w-4" />
-                  <span>Analytics</span>
-                </Link>
-                <Link to="/report-issue" className="text-foreground hover:text-primary transition-colors flex items-center gap-1">
-                  <FileText className="h-4 w-4" />
-                  <span>Report Issue</span>
-                </Link>
+                {user?.role !== 'librarian' && (
+                  <>
+                    <Link to="/report-issue" className="text-foreground hover:text-primary transition-colors flex items-center gap-1">
+                      <FileText className="h-4 w-4" />
+                      <span>Report Issue</span>
+                    </Link>
+                  </>
+                )}
               </div>
             )}
           </div>
           
           {user ? (
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-3">
               <button 
-                className="p-2 rounded-full hover:bg-secondary transition-colors"
+                className="p-1.5 rounded-full hover:bg-secondary transition-colors"
                 aria-label="Search"
               >
-                <Search size={20} className="text-foreground" />
+                <Search size={18} className="text-foreground" />
               </button>
               
               <div className="relative">
                 <button 
-                  className="p-2 rounded-full hover:bg-secondary transition-colors"
+                  className="p-1.5 rounded-full hover:bg-secondary transition-colors"
                   onClick={() => setShowNotifications(!showNotifications)}
                   aria-label="Notifications"
                 >
-                  <Bell size={20} className="text-foreground" />
+                  <Bell size={18} className="text-foreground" />
                   {unreadNotifications > 0 && (
                     <span className="absolute top-0 right-0 bg-primary text-primary-foreground text-xs w-5 h-5 flex items-center justify-center rounded-full">
                       {unreadNotifications}
@@ -138,14 +137,14 @@ export const Navbar: React.FC = () => {
               </div>
 
               {/* Theme Toggle */}
-              <div className="p-2">
+              <div className="p-1">
                 <ThemeToggle />
               </div>
               
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button className="flex items-center space-x-2 p-2 rounded-full hover:bg-secondary transition-colors">
-                    <Avatar className="h-9 w-9 border-2 border-primary/20">
+                  <button className="flex items-center space-x-2 p-1.5 rounded-full hover:bg-secondary transition-colors">
+                    <Avatar className="h-7 w-7 border border-primary/20">
                       {/* Fix for the avatarUrl TypeScript error */}
                       <AvatarImage src={user.name ? `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}` : undefined} alt={user.name || 'User'} />
                       <AvatarFallback className="bg-primary/30 text-primary-foreground">

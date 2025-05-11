@@ -32,6 +32,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Skeleton } from '@/components/ui/skeleton';
+import { supabase } from '../integrations/supabase/client';
 
 // Format amenity name for display
 const formatAmenityName = (amenity: RoomAmenity): string => {
@@ -85,12 +86,161 @@ const Rooms = () => {
     const fetchRooms = async () => {
       setLoading(true);
       try {
-        const rooms = await searchRooms(searchQuery, {
-          amenities: selectedAmenities.length > 0 ? selectedAmenities : undefined,
-          capacity: minCapacity ? Number(minCapacity) : undefined,
+        console.log('Fetching rooms with filters:', {
+          searchQuery,
+          amenities: selectedAmenities,
+          capacity: minCapacity,
           date: selectedDate ? format(selectedDate, 'yyyy-MM-dd') : undefined
         });
-        setFilteredRooms(rooms);
+        
+        // Format the selected date for querying availability
+        const formattedDate = format(selectedDate, 'yyyy-MM-dd');
+        console.log('Formatted date for availability check:', formattedDate);
+        
+        // First try direct query to Supabase to check if rooms exist
+        const { data: directRoomsData, error: directError } = await supabase
+          .from('rooms')
+          .select('*');
+          
+        console.log('Direct Supabase query results:', directRoomsData?.length || 0, 'rooms');
+        console.log('Direct query error:', directError);
+        
+        // Fetch room availability data from room_availability table
+        const { data: availabilityData, error: availabilityError } = await supabase
+          .from('room_availability')
+          .select('*')
+          .eq('date', formattedDate);
+          
+        console.log('Room availability data:', availabilityData?.length || 0, 'records');
+        console.log('Availability error:', availabilityError);
+        
+        // If no rooms found, try to add sample rooms
+        if (!directRoomsData || directRoomsData.length === 0) {
+          console.log('No rooms found, adding sample rooms...');
+          
+          const sampleRooms = [
+            {
+              name: 'Study Room A',
+              description: 'A quiet study room for individual or small group study sessions.',
+              capacity: 4,
+              location: 'First Floor, East Wing',
+              amenities: ['wifi', 'whiteboard', 'silence'] as RoomAmenity[],
+              images: ['https://images.pexels.com/photos/1329571/pexels-photo-1329571.jpeg']
+            },
+            {
+              name: 'Collaboration Space',
+              description: 'Open space designed for group projects and collaborative work.',
+              capacity: 12,
+              location: 'Second Floor, Central Area',
+              amenities: ['wifi', 'projector', 'whiteboard', 'videoconferencing'] as RoomAmenity[],
+              images: ['https://images.pexels.com/photos/1181406/pexels-photo-1181406.jpeg']
+            },
+            {
+              name: 'Computer Lab',
+              description: 'Room equipped with desktop computers and specialized software.',
+              capacity: 20,
+              location: 'First Floor, West Wing',
+              amenities: ['wifi', 'computers', 'printer'] as RoomAmenity[],
+              images: ['https://images.pexels.com/photos/267507/pexels-photo-267507.jpeg']
+            }
+          ];
+          
+          // Try to add each room
+          for (const room of sampleRooms) {
+            const { error: insertError } = await supabase.from('rooms').insert(room);
+            if (insertError) {
+              console.error(`Error adding room ${room.name}:`, insertError);
+            } else {
+              console.log(`Added room: ${room.name}`);
+            }
+          }
+          
+          // Query again to get the newly added rooms
+          const { data: newRoomsData } = await supabase.from('rooms').select('*');
+          if (newRoomsData && newRoomsData.length > 0) {
+            console.log('Successfully added and retrieved sample rooms:', newRoomsData.length);
+            // Create a new array with the fetched data instead of reassigning the const variable
+            const updatedRoomsData = newRoomsData;
+            
+            // Convert the direct data to Room objects
+            const directRooms = updatedRoomsData.map(room => ({
+              id: room.id,
+              name: room.name,
+              description: room.description || '',
+              capacity: room.capacity,
+              location: room.location || '',
+              amenities: room.amenities || [],
+              images: room.images || ['https://images.pexels.com/photos/1329571/pexels-photo-1329571.jpeg'],
+              availabilitySchedule: [],
+              floorMapPosition: { x: 0, y: 0 }
+            }));
+            
+            console.log('Direct rooms processed:', directRooms.length);
+            setFilteredRooms(directRooms);
+            setLoading(false);
+            return; // Exit early since we've set the rooms
+          }
+        }
+        
+        if (directRoomsData && directRoomsData.length > 0) {
+          // Process availability data
+          const availabilityMap = new Map();
+          if (availabilityData && availabilityData.length > 0) {
+            availabilityData.forEach(avail => {
+              // Parse the slots data
+              let slots = [];
+              try {
+                if (typeof avail.slots === 'string') {
+                  slots = JSON.parse(avail.slots);
+                } else if (Array.isArray(avail.slots)) {
+                  slots = avail.slots;
+                }
+              } catch (e) {
+                console.error('Error parsing slots:', e);
+              }
+              
+              availabilityMap.set(avail.room_id, {
+                date: avail.date,
+                slots: slots
+              });
+            });
+          }
+          
+          console.log('Availability map created with', availabilityMap.size, 'entries');
+          
+          // Convert the direct data to Room objects with availability info
+          const directRooms = directRoomsData.map(room => {
+            // Get availability for this room
+            const roomAvailability = availabilityMap.get(room.id);
+            const availabilitySchedule = roomAvailability ? [roomAvailability] : [];
+            
+            return {
+              id: room.id,
+              name: room.name,
+              description: room.description || '',
+              capacity: room.capacity,
+              location: room.location || '',
+              amenities: room.amenities || [],
+              images: room.images || ['https://images.pexels.com/photos/1329571/pexels-photo-1329571.jpeg'],
+              availabilitySchedule: availabilitySchedule,
+              floorMapPosition: { x: 0, y: 0 }
+            };
+          });
+          
+          console.log('Direct rooms processed with availability:', directRooms.length);
+          setFilteredRooms(directRooms);
+        } else {
+          // Fall back to the regular search function
+          const rooms = await searchRooms(searchQuery, {
+            amenities: selectedAmenities.length > 0 ? selectedAmenities : undefined,
+            capacity: minCapacity ? Number(minCapacity) : undefined,
+            date: selectedDate ? format(selectedDate, 'yyyy-MM-dd') : undefined
+          });
+          
+          console.log('Rooms fetched via searchRooms:', rooms.length);
+          console.log('Room data:', JSON.stringify(rooms, null, 2));
+          setFilteredRooms(rooms);
+        }
       } catch (error) {
         console.error("Error fetching rooms:", error);
       } finally {

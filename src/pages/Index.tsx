@@ -9,9 +9,10 @@ const Index = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
 
-  // If user is logged in, redirect to appropriate dashboard
+  // If user is logged in and on the home page, redirect to appropriate dashboard
   useEffect(() => {
-    if (user) {
+    // Only redirect if the user is on the exact home page (/)
+    if (user && window.location.pathname === '/') {
       navigate(user.role === 'librarian' ? '/librarian' : '/member');
     }
   }, [user, navigate]);

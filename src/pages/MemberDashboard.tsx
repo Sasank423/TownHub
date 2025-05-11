@@ -41,12 +41,12 @@ const MemberDashboard = () => {
     <DashboardLayout title={`Welcome, ${user?.name || 'Member'}`} breadcrumbs={[{ label: 'Dashboard' }]}>
       <div className="space-y-8">
         {/* Status Summary */}
-        <div className="bg-card rounded-lg shadow-sm border border-border p-6">
+        <div className="bg-card dark:bg-card/95 rounded-lg shadow-sm border border-border p-6">
           <div className="flex flex-wrap gap-4 items-center justify-between">
             <div>
               <h2 className="font-medium text-lg text-foreground">Membership Status</h2>
               <div className="flex items-center mt-2">
-                <div className={`h-3 w-3 rounded-full ${user?.role === 'member' ? 'bg-green-500' : 'bg-amber-500'} mr-2`}></div>
+                <div className={`h-3 w-3 rounded-full ${user?.role === 'member' ? 'bg-green-500 dark:bg-green-400' : 'bg-amber-500 dark:bg-amber-400'} mr-2`}></div>
                 <span className="text-foreground/80">Active</span>
               </div>
               <p className="text-sm text-muted-foreground mt-1">
@@ -79,20 +79,20 @@ const MemberDashboard = () => {
         {/* Notifications */}
         <div className="grid md:grid-cols-2 gap-6">
           {/* Active Reservations */}
-          <div className="bg-card rounded-lg shadow-sm border border-border p-5">
+          <div className="bg-card dark:bg-card/95 rounded-lg shadow-sm border border-border p-5">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-lg font-medium flex items-center text-foreground">
                 <Book className="mr-2 h-5 w-5 text-primary" />
                 Active Reservations
               </h2>
-              <span className="bg-primary/10 text-primary text-xs font-medium px-2.5 py-0.5 rounded-full">
+              <span className="bg-primary/10 text-primary dark:bg-primary/20 dark:text-primary-foreground text-xs font-medium px-2.5 py-0.5 rounded-full">
                 {activeReservations.length}
               </span>
             </div>
 
             {loading ? (
               <div className="flex items-center justify-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-primary"></div>
+                <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-primary dark:border-primary/80"></div>
               </div>
             ) : (
               <div className="space-y-3">
@@ -102,7 +102,7 @@ const MemberDashboard = () => {
                   ))
                 ) : (
                   <div className="text-center py-8">
-                    <Book className="mx-auto h-12 w-12 text-muted-foreground/40" />
+                    <Book className="mx-auto h-12 w-12 text-muted-foreground/40 dark:text-muted-foreground/30" />
                     <h3 className="mt-2 text-foreground font-medium">No active reservations</h3>
                     <p className="mt-1 text-sm text-muted-foreground">Browse our catalog to find books</p>
                   </div>
@@ -112,15 +112,17 @@ const MemberDashboard = () => {
 
             {activeReservations.length > 0 && (
               <div className="mt-3 pt-3 border-t border-border text-right">
-                <Button variant="link" size="sm" className="gap-1">
-                  View All <ArrowRight size={14} />
-                </Button>
+                <Link to="/active-reservations">
+                  <Button variant="link" size="sm" className="gap-1">
+                    View All <ArrowRight size={14} />
+                  </Button>
+                </Link>
               </div>
             )}
           </div>
 
           {/* Pending Approvals - FIXED DARK THEME STYLING */}
-          <div className="bg-card rounded-lg shadow-sm border border-border p-5">
+          <div className="bg-card dark:bg-card/95 rounded-lg shadow-sm border border-border p-5">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-lg font-medium flex items-center text-foreground">
                 <Bell className="mr-2 h-5 w-5 text-primary" />
@@ -135,7 +137,7 @@ const MemberDashboard = () => {
 
             {loading ? (
               <div className="flex items-center justify-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-primary"></div>
+                <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-primary dark:border-primary/80"></div>
               </div>
             ) : (
               <div className="space-y-3">
@@ -145,7 +147,7 @@ const MemberDashboard = () => {
                   ))
                 ) : (
                   <div className="text-center py-8">
-                    <Bell className="mx-auto h-12 w-12 text-muted-foreground/40" />
+                    <Bell className="mx-auto h-12 w-12 text-muted-foreground/40 dark:text-muted-foreground/30" />
                     <h3 className="mt-2 text-foreground font-medium">No pending reservations</h3>
                     <p className="mt-1 text-sm text-muted-foreground">All your requests have been processed</p>
                   </div>
@@ -153,13 +155,17 @@ const MemberDashboard = () => {
               </div>
             )}
 
-            {pendingReservations.length > 0 && (
-              <div className="mt-3 pt-3 border-t border-border text-right">
-                <Button variant="link" size="sm" className="gap-1">
-                  View All <ArrowRight size={14} />
-                </Button>
-              </div>
-            )}
+            <div className="mt-3 pt-3 border-t border-border flex justify-end">
+              {pendingReservations.length > 0 ? (
+                <Link to="/pending-requests">
+                  <Button variant="link" size="sm" className="gap-1">
+                    View All <ArrowRight size={14} />
+                  </Button>
+                </Link>
+              ) : (
+                <div className="h-6"></div>
+              )}
+            </div>
           </div>
         </div>
 

@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Calendar as CalendarIcon, Book, Home } from 'lucide-react';
-import { Reservation } from '../utils/mockData';
+import { Reservation } from '../types/models';
 import { format, isSameDay, addDays, startOfMonth, endOfMonth, eachDayOfInterval, addMonths, subMonths, isToday } from 'date-fns';
 import { toast } from '@/components/ui/sonner';
 import {
@@ -39,14 +39,10 @@ export const Calendar: React.FC<CalendarProps> = ({ reservations }) => {
 
   const getReservationsForDay = (day: Date) => {
     return reservations.filter(res => {
-      const startDate = new Date(res.startDate);
       const endDate = new Date(res.endDate);
       
-      return (
-        isSameDay(startDate, day) || 
-        isSameDay(endDate, day) || 
-        (day > startDate && day < endDate)
-      );
+      // Only mark the end date of each reservation
+      return isSameDay(endDate, day);
     });
   };
   

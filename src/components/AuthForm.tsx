@@ -122,7 +122,14 @@ export const AuthForm: React.FC = () => {
       
       console.log(`Demo login for ${role} role:`, email);
       await login(email, password);
-      // Navigation will be handled by useEffect in Login.tsx
+      
+      // Force navigation to the correct dashboard based on role
+      // This is a workaround for the role-based redirection issue
+      setTimeout(() => {
+        const redirectPath = role === 'librarian' ? '/librarian' : '/member';
+        console.log(`Forcing redirect to ${redirectPath} for ${role} role`);
+        window.location.href = redirectPath;
+      }, 500);
     } catch (err: any) {
       console.error("Demo login error:", err);
       setError(err.message || "Demo login failed");

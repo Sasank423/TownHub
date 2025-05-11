@@ -7,10 +7,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { BookPlus, Loader2 } from 'lucide-react';
+import { BookPlus, Loader2, Upload, Image as ImageIcon } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/sonner';
 import { Badge } from '@/components/ui/badge';
+import { v4 as uuidv4 } from 'uuid';
 
 interface BookFormData {
   title: string;
@@ -43,6 +44,8 @@ const AddBooks = () => {
     isbn: '',
     language: 'English'
   });
+  
+  const [uploading, setUploading] = useState(false);
 
   // Redirect if not a librarian
   React.useEffect(() => {
@@ -74,6 +77,67 @@ const AddBooks = () => {
       ...prev,
       genres: prev.genres.filter(g => g !== genre)
     }));
+  };
+  
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (!event.target.files || event.target.files.length === 0) {
+      return;
+    }
+
+    setUploading(true);
+    console.log('Starting book cover image upload...');
+
+    try {
+      const file = event.target.files[0];
+      
+      // Check file size (max 2MB)
+      if (file.size > 2 * 1024 * 1024) {
+        toast.error('Image size exceeds 2MB limit');
+        setUploading(false);
+        return;
+      }
+      
+      console.log('File selected:', file.name, 'Size:', file.size, 'Type:', file.type);
+      
+      const fileExt = file.name.split('.').pop();
+      const fileName = `book_cover_${uuidv4()}.${fileExt}`;
+      
+      // Upload to Supabase storage
+      const { data, error } = await supabase.storage
+        .from('images')
+        .upload(fileName, file);
+        
+      if (error) {
+        throw error;
+      }
+      
+      // Get the public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('images')
+        .getPublicUrl(fileName);
+        
+      console.log('Image uploaded successfully. Public URL:', publicUrl);
+      
+      // Update book data with the image URL
+      setBookData({
+        ...bookData,
+        cover_image: publicUrl
+      });
+      
+      toast.success('Cover image uploaded successfully');
+    } catch (error: any) {
+      console.error('Error uploading image:', error);
+      toast.error(error.message || 'Failed to upload image');
+      
+      // Fallback to placeholder if upload fails
+      const placeholderUrl = `https://placehold.co/400x600/1e293b/ffffff?text=${encodeURIComponent(bookData.title || 'Book Cover')}`;
+      setBookData({
+        ...bookData,
+        cover_image: placeholderUrl
+      });
+    } finally {
+      setUploading(false);
+    }
   };
 
   const handleAddBook = async () => {
@@ -253,16 +317,63 @@ const AddBooks = () => {
                   />
                 </div>
                 
-                {/* Cover Image URL */}
+                {/* Cover Image Upload */}
                 <div className="space-y-2">
-                  <Label htmlFor="cover_image">Cover Image URL</Label>
-                  <Input
-                    id="cover_image"
-                    name="cover_image"
-                    value={bookData.cover_image}
-                    onChange={handleInputChange}
-                    placeholder="URL to cover image"
-                  />
+                  <Label htmlFor="cover_image">Cover Image</Label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <div className="flex items-center justify-center w-full">
+                        <label htmlFor="cover-image-upload" className="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed rounded-lg cursor-pointer bg-muted/40 hover:bg-muted/60 transition-colors">
+                          <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                            {uploading ? (
+                              <Loader2 className="w-8 h-8 text-primary animate-spin mb-2" />
+                            ) : (
+                              <Upload className="w-8 h-8 text-muted-foreground mb-2" />
+                            )}
+                            <p className="mb-2 text-sm text-muted-foreground">
+                              <span className="font-semibold">Click to upload</span> or drag and drop
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              PNG, JPG or WEBP (MAX. 2MB)
+                            </p>
+                          </div>
+                          <input 
+                            id="cover-image-upload" 
+                            type="file" 
+                            className="hidden" 
+                            accept="image/png, image/jpeg, image/webp"
+                            onChange={handleImageUpload}
+                            disabled={uploading}
+                          />
+                        </label>
+                      </div>
+                    </div>
+                    
+                    {/* Image Preview */}
+                    <div className="flex items-center justify-center">
+                      {bookData.cover_image ? (
+                        <div className="relative group">
+                          <img 
+                            src={bookData.cover_image} 
+                            alt="Book cover preview" 
+                            className="h-40 object-contain rounded-md" 
+                          />
+                          <button
+                            type="button"
+                            className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                            onClick={() => setBookData({...bookData, cover_image: ''})}
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col items-center justify-center text-muted-foreground">
+                          <ImageIcon className="w-8 h-8 mb-2" />
+                          <p className="text-sm">No image uploaded</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
               </div>
               
