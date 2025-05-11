@@ -128,6 +128,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       if (error) {
         console.error("Login error:", error.message);
+        
+        // Special handling for email not confirmed error
+        if (error.message.includes('Email not confirmed')) {
+          console.warn("User email not confirmed:", email);
+        }
+        
         throw error;
       }
       
