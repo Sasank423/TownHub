@@ -4,15 +4,21 @@ import { Suspense } from 'react';
 import App from './App.tsx';
 import './index.css';
 import { supabase } from './integrations/supabase/client';
-import { subscribeToTable } from './utils/supabaseRealtime';
 import { LoadingScreen } from './components/ui/loading-screen';
 
-// Enable real-time for notifications using channel subscription
+// Create a channel for real-time updates on the notifications table
 const enableRealTimeForNotifications = () => {
-  // Create a channel for real-time updates on the notifications table
-  subscribeToTable('notifications', '*', (payload) => {
-    console.log('Change received!', payload);
-  });
+  const channel = supabase.channel('public:notifications');
+  
+  channel
+    .on('postgres_changes', { 
+      event: '*', 
+      schema: 'public', 
+      table: 'notifications' 
+    }, (payload) => {
+      console.log('Change received!', payload);
+    })
+    .subscribe();
 };
 
 // Initialize real-time subscriptions
