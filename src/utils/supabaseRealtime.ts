@@ -19,7 +19,7 @@ export const subscribeToTable = (
 ): RealtimeChannel => {
   return supabase
     .channel(`public:${table}`)
-    .on('postgres_changes' as any, 
+    .on('postgres_changes', 
       {
         event, 
         schema: 'public', 

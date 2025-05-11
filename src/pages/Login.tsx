@@ -12,8 +12,14 @@ const Login = () => {
   // Redirect if already authenticated
   useEffect(() => {
     if (user) {
-      console.log("User already logged in, redirecting to dashboard");
-      navigate(user.role === 'librarian' ? '/librarian' : '/member');
+      console.log("User already logged in, role:", user.role);
+      
+      // Determine the correct path based on user role
+      const redirectPath = user.role === 'librarian' ? '/librarian' : '/member';
+      console.log(`Redirecting to ${redirectPath}`);
+      
+      // Use navigate for redirection
+      navigate(redirectPath, { replace: true });
     }
   }, [user, navigate]);
 

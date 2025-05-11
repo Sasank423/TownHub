@@ -123,13 +123,8 @@ export const AuthForm: React.FC = () => {
       console.log(`Demo login for ${role} role:`, email);
       await login(email, password);
       
-      // Force navigation to the correct dashboard based on role
-      // This is a workaround for the role-based redirection issue
-      setTimeout(() => {
-        const redirectPath = role === 'librarian' ? '/librarian' : '/member';
-        console.log(`Forcing redirect to ${redirectPath} for ${role} role`);
-        window.location.href = redirectPath;
-      }, 500);
+      // The Login component will handle routing based on the user's role,
+      // so we don't need to manually redirect here
     } catch (err: any) {
       console.error("Demo login error:", err);
       setError(err.message || "Demo login failed");
