@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { Bell, BookOpen, Calendar, BarChart2, FileText, LogOut, Search, User, Settings, History, ClipboardList } from 'lucide-react';
+import { BookOpen, Calendar, BarChart2, FileText, LogOut, User, Settings, History, ClipboardList } from 'lucide-react';
 import { NotificationCenter } from './NotificationCenter';
 import { ThemeToggle } from './ThemeToggle';
 import { useTranslation } from '../i18n';
@@ -116,32 +116,7 @@ export const Navbar: React.FC = () => {
           
           {user ? (
             <div className="flex items-center space-x-3">
-              <button 
-                className="p-1.5 rounded-full hover:bg-secondary transition-colors"
-                aria-label="Search"
-              >
-                <Search size={18} className="text-foreground" />
-              </button>
-              
-              <div className="relative">
-                <button 
-                  className="p-1.5 rounded-full hover:bg-secondary transition-colors"
-                  onClick={() => setShowNotifications(!showNotifications)}
-                  aria-label="Notifications"
-                >
-                  <Bell size={18} className="text-foreground" />
-                  {unreadNotifications > 0 && (
-                    <span className="absolute top-0 right-0 bg-primary text-primary-foreground text-xs w-5 h-5 flex items-center justify-center rounded-full">
-                      {unreadNotifications}
-                    </span>
-                  )}
-                </button>
-                {showNotifications && (
-                  <div className="absolute right-0 mt-2 z-10 w-80">
-                    <NotificationCenter />
-                  </div>
-                )}
-              </div>
+              {/* Search and notification buttons removed as requested */}
 
               {/* Theme Toggle */}
               <div className="p-1">

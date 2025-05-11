@@ -25,13 +25,143 @@ import {
   getAllGenres, 
   getAvailableBookCopiesCount 
 } from '../services/bookService';
-import { LayoutList, LayoutGrid, Search, Filter, BookOpen, Loader2 } from 'lucide-react';
+import { LayoutList, LayoutGrid, Search, BookOpen, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const ITEMS_PER_PAGE = 12;
+
+// Book Card Component
+interface BookCardProps {
+  book: Book;
+  viewMode: 'grid' | 'list';
+}
+
+const BookCard: React.FC<BookCardProps> = ({ book, viewMode }) => {
+  const [availableCopies, setAvailableCopies] = useState<number>(0);
+  const [loading, setLoading] = useState(true);
+  
+  useEffect(() => {
+    const getAvailability = async () => {
+      try {
+        const count = await getAvailableBookCopiesCount(book.id);
+        setAvailableCopies(count);
+      } catch (error) {
+        console.error(`Error fetching availability for book ${book.id}:`, error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    getAvailability();
+  }, [book.id]);
+  
+  const getStatusColor = (status: BookStatus) => {
+    switch(status) {
+      case 'available':
+        return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400';
+      case 'reserved':
+        return 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400';
+      case 'checked-out':
+        return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400';
+      default:
+        return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300';
+    }
+  };
+  
+  const getStatusText = (status: BookStatus) => {
+    switch(status) {
+      case 'available':
+        return 'Available';
+      case 'reserved':
+        return 'Reserved';
+      case 'checked-out':
+        return 'Checked Out';
+      default:
+        return 'Unknown';
+    }
+  };
+  
+  if (viewMode === 'grid') {
+    return (
+      <Link to={`/books/${book.id}`}>
+        <Card className="h-full transition-all hover:shadow-md">
+          <div className="aspect-[2/3] relative overflow-hidden rounded-t-lg">
+            <img 
+              src={book.coverImage} 
+              alt={`${book.title} cover`}
+              className="w-full h-full object-cover"
+            />
+            {!loading && (
+              <div className={`absolute top-2 right-2 px-2 py-0.5 rounded-full text-xs font-medium ${getStatusColor(availableCopies > 0 ? 'available' : 'checked-out')}`}>
+                {availableCopies > 0 ? getStatusText('available') : getStatusText('checked-out')}
+              </div>
+            )}
+          </div>
+          <CardContent className="p-4">
+            <h3 className="font-medium line-clamp-1">{book.title}</h3>
+            <p className="text-sm text-muted-foreground line-clamp-1">{book.author}</p>
+            
+            <div className="mt-2 flex flex-wrap gap-1">
+              {book.genres.slice(0, 2).map(genre => (
+                <Badge key={genre} variant="outline" className="text-xs">
+                  {genre}
+                </Badge>
+              ))}
+              {book.genres.length > 2 && (
+                <Badge variant="outline" className="text-xs">+{book.genres.length - 2}</Badge>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </Link>
+    );
+  }
+  
+  return (
+    <Link to={`/books/${book.id}`}>
+      <Card className="transition-all hover:shadow-md">
+        <div className="p-4 flex">
+          <div className="w-16 h-24 flex-shrink-0 overflow-hidden rounded-sm mr-4">
+            <img 
+              src={book.coverImage} 
+              alt={`${book.title} cover`}
+              className="w-full h-full object-cover"
+            />
+          </div>
+          
+          <div className="flex-1">
+            <div className="flex justify-between items-start">
+              <div>
+                <h3 className="font-medium">{book.title}</h3>
+                <p className="text-sm text-muted-foreground">{book.author}</p>
+              </div>
+              
+              {!loading && (
+                <div className={`px-2 py-0.5 rounded-full text-xs font-medium ${getStatusColor(availableCopies > 0 ? 'available' : 'checked-out')}`}>
+                  {availableCopies > 0 ? getStatusText('available') : getStatusText('checked-out')}
+                </div>
+              )}
+            </div>
+            
+            <p className="text-sm text-muted-foreground mt-2 line-clamp-2">
+              {book.description || 'No description available.'}
+            </p>
+            
+            <div className="mt-2 flex flex-wrap gap-1">
+              {book.genres.map(genre => (
+                <Badge key={genre} variant="outline" className="text-xs">
+                  {genre}
+                </Badge>
+              ))}
+            </div>
+          </div>
+        </div>
+      </Card>
+    </Link>
+  );
+};
 
 const Catalog = () => {
   const [view, setView] = useState<'grid' | 'list'>('grid');
@@ -41,7 +171,7 @@ const Catalog = () => {
   const [sortBy, setSortBy] = useState<'title' | 'author' | 'publicationYear' | 'addedDate'>('title');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [currentPage, setCurrentPage] = useState(1);
-  const [showFilters, setShowFilters] = useState(false);
+
   
   // State for async data
   const [books, setBooks] = useState<Book[]>([]);
@@ -50,16 +180,26 @@ const Catalog = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [paginatedBooks, setPaginatedBooks] = useState<Book[]>([]);
 
-  // Load books and genres
+  // Load genres once on component mount
   useEffect(() => {
-    const loadData = async () => {
-      setLoading(true);
+    const loadGenres = async () => {
       try {
-        // Load genres first as we need them for the filter UI
         const genresData = await getAllGenres();
         setGenres(genresData);
-        
-        // Then load books with filters
+      } catch (error) {
+        console.error('Error loading genres:', error);
+      }
+    };
+    
+    loadGenres();
+  }, []);
+  
+  // Load books with filters
+  useEffect(() => {
+    const loadBooks = async () => {
+      setLoading(true);
+      try {
+        // Load books with filters
         const booksData = await searchBooks(searchQuery, {
           genres: selectedGenres.length > 0 ? selectedGenres : undefined,
           availability: availability as BookStatus || undefined,
@@ -89,7 +229,12 @@ const Catalog = () => {
       }
     };
     
-    loadData();
+    // Debounce the search to avoid too many requests
+    const timeoutId = setTimeout(() => {
+      loadBooks();
+    }, 300);
+    
+    return () => clearTimeout(timeoutId);
   }, [searchQuery, selectedGenres, availability, sortBy, sortOrder, currentPage]);
   
   // Handle genre toggle
@@ -140,20 +285,7 @@ const Catalog = () => {
           </div>
           
           <div className="flex items-center gap-2">
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={() => setShowFilters(!showFilters)}
-              className="flex items-center gap-2"
-            >
-              <Filter size={16} />
-              Filters
-              {(selectedGenres.length > 0 || availability) && (
-                <Badge variant="secondary" className="ml-1">
-                  {selectedGenres.length + (availability ? 1 : 0)}
-                </Badge>
-              )}
-            </Button>
+
             
             <div className="border rounded-md flex">
               <Button
@@ -177,113 +309,6 @@ const Catalog = () => {
             </div>
           </div>
         </div>
-        
-        {/* Filters Panel */}
-        {showFilters && (
-          <Card className="animate-fade-in">
-            <CardContent className="p-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {/* Genre Filter */}
-                <div>
-                  <h3 className="font-medium mb-2">Genres</h3>
-                  {loading ? (
-                    <div className="flex flex-wrap gap-2">
-                      {[1, 2, 3, 4, 5].map(i => (
-                        <Skeleton key={i} className="h-6 w-16" />
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="flex flex-wrap gap-2">
-                      {genres.map(genre => (
-                        <Badge
-                          key={genre}
-                          variant={selectedGenres.includes(genre) ? 'default' : 'outline'}
-                          className="cursor-pointer hover:bg-primary/90"
-                          onClick={() => toggleGenre(genre)}
-                        >
-                          {genre}
-                        </Badge>
-                      ))}
-                    </div>
-                  )}
-                </div>
-                
-                {/* Availability Filter */}
-                <div>
-                  <h3 className="font-medium mb-2">Availability</h3>
-                  <Select
-                    value={availability}
-                    onValueChange={(value) => {
-                      setAvailability(value as BookStatus | '');
-                      setCurrentPage(1);
-                    }}
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Any availability" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="">Any availability</SelectItem>
-                      <SelectItem value="available">Available</SelectItem>
-                      <SelectItem value="reserved">Reserved</SelectItem>
-                      <SelectItem value="checked-out">Checked Out</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                {/* Sort Options */}
-                <div>
-                  <h3 className="font-medium mb-2">Sort By</h3>
-                  <div className="flex gap-2">
-                    <Select
-                      value={sortBy}
-                      onValueChange={(value) => {
-                        setSortBy(value as any);
-                        setCurrentPage(1);
-                      }}
-                    >
-                      <SelectTrigger className="w-full">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="title">Title</SelectItem>
-                        <SelectItem value="author">Author</SelectItem>
-                        <SelectItem value="publicationYear">Publication Year</SelectItem>
-                        <SelectItem value="addedDate">Date Added</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    
-                    <Select
-                      value={sortOrder}
-                      onValueChange={(value) => {
-                        setSortOrder(value as 'asc' | 'desc');
-                        setCurrentPage(1);
-                      }}
-                    >
-                      <SelectTrigger className="w-[120px]">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="asc">Ascending</SelectItem>
-                        <SelectItem value="desc">Descending</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-              </div>
-              
-              {/* Reset Filters */}
-              <div className="mt-4 text-right">
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  onClick={resetFilters}
-                >
-                  Reset Filters
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        )}
         
         {/* Results Count */}
         {loading ? (
@@ -458,117 +483,6 @@ const Catalog = () => {
         )}
       </div>
     </DashboardLayout>
-  );
-};
-
-// Book Card Component
-interface BookCardProps {
-  book: Book;
-  viewMode: 'grid' | 'list';
-}
-
-const BookCard: React.FC<BookCardProps> = ({ book, viewMode }) => {
-  const [availableCopies, setAvailableCopies] = useState<number>(0);
-  const [loading, setLoading] = useState(true);
-  
-  useEffect(() => {
-    const getAvailability = async () => {
-      try {
-        const count = await getAvailableBookCopiesCount(book.id);
-        setAvailableCopies(count);
-      } catch (error) {
-        console.error(`Error fetching availability for book ${book.id}:`, error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    getAvailability();
-  }, [book.id]);
-  
-  const getStatusColor = () => {
-    if (availableCopies > 0) return 'bg-green-100 text-green-800';
-    const hasReservedCopies = book.copies.some(copy => copy.status === 'reserved');
-    return hasReservedCopies 
-      ? 'bg-amber-100 text-amber-800' 
-      : 'bg-red-100 text-red-800';
-  };
-  
-  const getStatusText = () => {
-    if (loading) return "Loading...";
-    if (availableCopies > 0) {
-      return `${availableCopies} Available`;
-    }
-    const hasReservedCopies = book.copies.some(copy => copy.status === 'reserved');
-    return hasReservedCopies ? 'Reserved' : 'Checked Out';
-  };
-  
-  if (viewMode === 'grid') {
-    return (
-      <Card className="overflow-hidden hover:shadow-md transition-shadow">
-        <Link to={`/books/${book.id}`} className="flex flex-col h-full">
-          <div className="aspect-[2/3] overflow-hidden relative">
-            <img 
-              src={book.coverImage} 
-              alt={`Cover of ${book.title}`}
-              className="object-cover w-full h-full hover:scale-105 transition-transform duration-300"
-            />
-            <div className={`absolute bottom-2 right-2 px-2 py-1 rounded text-xs font-medium ${loading ? 'bg-gray-100 text-gray-800' : getStatusColor()}`}>
-              {getStatusText()}
-            </div>
-          </div>
-          <CardContent className="p-4 flex-grow flex flex-col">
-            <h3 className="font-medium line-clamp-1" title={book.title}>{book.title}</h3>
-            <p className="text-sm text-muted-foreground">by {book.author}</p>
-            <div className="mt-auto pt-2 flex gap-1 flex-wrap">
-              {book.genres.slice(0, 2).map(genre => (
-                <Badge key={genre} variant="outline" className="text-xs">
-                  {genre}
-                </Badge>
-              ))}
-              {book.genres.length > 2 && (
-                <Badge variant="outline" className="text-xs">
-                  +{book.genres.length - 2}
-                </Badge>
-              )}
-            </div>
-          </CardContent>
-        </Link>
-      </Card>
-    );
-  }
-  
-  return (
-    <Card className="overflow-hidden hover:shadow-md transition-shadow">
-      <Link to={`/books/${book.id}`} className="flex p-4">
-        <div className="w-16 h-24 overflow-hidden mr-4 flex-shrink-0">
-          <img 
-            src={book.coverImage} 
-            alt={`Cover of ${book.title}`}
-            className="object-cover w-full h-full"
-          />
-        </div>
-        <div className="flex flex-col flex-1">
-          <div className="flex justify-between">
-            <div>
-              <h3 className="font-medium">{book.title}</h3>
-              <p className="text-sm text-muted-foreground">by {book.author}</p>
-            </div>
-            <div className={`px-2 py-1 h-fit rounded text-xs font-medium ${loading ? 'bg-gray-100 text-gray-800' : getStatusColor()}`}>
-              {getStatusText()}
-            </div>
-          </div>
-          <p className="text-sm line-clamp-2 mt-1">{book.description}</p>
-          <div className="mt-auto pt-2 flex gap-1 flex-wrap">
-            {book.genres.map(genre => (
-              <Badge key={genre} variant="outline" className="text-xs">
-                {genre}
-              </Badge>
-            ))}
-          </div>
-        </div>
-      </Link>
-    </Card>
   );
 };
 
