@@ -4,6 +4,11 @@
 
 TownBook is a comprehensive library management system designed to streamline the operations of modern libraries. The platform offers separate interfaces for librarians and members, enabling efficient management of books, rooms, reservations, and user accounts.
 
+example librarian login :-  
+
+    Email    : wisechoice953@gmail.com
+    password : Admin@123
+
 ## 🚀 Features
 
 ### 📖 Book Management
