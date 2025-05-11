@@ -3,6 +3,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { toast } from '@/components/ui/sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { debugLog } from '@/utils/debugHelper';
 
 interface UserData extends User {
   role?: 'member' | 'librarian' | 'admin';
@@ -21,6 +22,18 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// Clean up any stale Supabase auth state to prevent issues
+const cleanupAuthState = () => {
+  // Remove standard auth tokens
+  localStorage.removeItem('supabase.auth.token');
+  // Remove all Supabase auth keys from localStorage
+  Object.keys(localStorage).forEach((key) => {
+    if (key.startsWith('supabase.auth.') || key.includes('sb-')) {
+      localStorage.removeItem(key);
+    }
+  });
+};
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<UserData | null>(null);
   const [session, setSession] = useState<Session | null>(null);
@@ -37,6 +50,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         // Fetch user profile data if user is logged in
         if (session?.user) {
+          // Use setTimeout to prevent potential deadlocks
           setTimeout(() => {
             fetchUserProfile(session.user.id);
           }, 0);
@@ -94,6 +108,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setLoading(true);
       setError(null);
       
+      // First, clean up any stale auth state
+      cleanupAuthState();
+      
+      // Attempt to sign out globally first to clear any previous sessions
+      try {
+        await supabase.auth.signOut({ scope: 'global' });
+      } catch (err) {
+        // Continue even if this fails
+        console.log("Global sign out attempt failed, continuing");
+      }
+      
       console.log(`Attempting login for: ${email}`);
       
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -109,6 +134,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Success case - the onAuthStateChange handler will update the user state
       console.log("Login successful:", data.user?.email);
       toast.success('Welcome back!');
+      
+      // Fetch user profile directly to ensure role is available for routing
+      if (data.user) {
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('role, name')
+          .eq('id', data.user.id)
+          .single();
+          
+        if (profileData) {
+          // Update user data with profile info
+          setUser(prev => {
+            if (!prev) return null;
+            return { ...prev, role: profileData.role, name: profileData.name };
+          });
+        }
+      }
+      
       return;
       
     } catch (err: any) {
@@ -124,8 +167,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const logout = async () => {
     try {
       setLoading(true);
-      await supabase.auth.signOut();
+      
+      // Clean up auth state
+      cleanupAuthState();
+      
+      // Attempt global sign out
+      await supabase.auth.signOut({ scope: 'global' });
+      
+      // Clear user and session state
+      setUser(null);
+      setSession(null);
+      
       toast.success('You have been logged out');
+      
+      // Force page reload for a clean state
+      window.location.href = '/login';
     } catch (err: any) {
       console.error('Logout error:', err);
       toast.error('Failed to log out');

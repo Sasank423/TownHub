@@ -40,14 +40,17 @@ const ProtectedRoute = ({ element, requiredRole }: { element: React.ReactNode, r
   }
   
   if (!user) {
+    console.log("No user found, redirecting to login");
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
   
-  // Only redirect if the user's role doesn't match the required role
+  // Only redirect if a specific role is required and user doesn't have it
   if (requiredRole && user.role !== requiredRole) {
+    console.log(`User role (${user.role}) doesn't match required role (${requiredRole}), redirecting`);
+    
     // Determine the appropriate home path based on user role
-    const userHomePath = user.role === 'librarian' ? '/librarian' : '/member';
-    return <Navigate to={userHomePath} replace />;
+    const homePath = user.role === 'librarian' ? '/librarian' : '/member';
+    return <Navigate to={homePath} replace />;
   }
   
   return <>{element}</>;
