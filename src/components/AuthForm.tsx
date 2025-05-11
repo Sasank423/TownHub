@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -7,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from '@/components/ui/sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { Eye, EyeOff, Mail, Key, User as UserIcon } from 'lucide-react';
 
 export const AuthForm: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -19,6 +21,8 @@ export const AuthForm: React.FC = () => {
     password: '',
     confirmPassword: '',
   });
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const { login, forgotPassword, error: authError } = useAuth();
   const navigate = useNavigate();
   const [showForgotPassword, setShowForgotPassword] = useState(false);
@@ -111,14 +115,12 @@ export const AuthForm: React.FC = () => {
     }
   };
 
-
-
   return (
-    <div className="w-full max-w-md mx-auto">
+    <div className="w-full max-w-md mx-auto animate-fade-in">
       {showForgotPassword ? (
-        <div className="space-y-6 bg-card p-8 rounded-lg shadow-sm border border-border">
+        <div className="space-y-6 bg-card p-8 rounded-lg shadow-card border border-border">
           <div className="text-center">
-            <h2 className="text-2xl font-semibold">Reset Password</h2>
+            <h2 className="text-2xl font-semibold font-playfair text-gradient-blue-green">Reset Password</h2>
             <p className="text-sm text-muted-foreground mt-2">
               {resetSent 
                 ? 'Check your email for reset instructions'
@@ -128,7 +130,7 @@ export const AuthForm: React.FC = () => {
 
           {resetSent ? (
             <div className="text-center space-y-4">
-              <div className="p-3 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-md">
+              <div className="p-4 bg-green-100/10 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-md border border-green-300/20 shadow-sm">
                 Reset link sent to {formData.email}
               </div>
               
@@ -138,6 +140,7 @@ export const AuthForm: React.FC = () => {
                   setResetSent(false);
                 }}
                 className="w-full"
+                variant="gradient"
               >
                 Back to Login
               </Button>
@@ -146,19 +149,23 @@ export const AuthForm: React.FC = () => {
             <form onSubmit={handleForgotPassword} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="reset-email">Email</Label>
-                <Input
-                  id="reset-email"
-                  name="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  placeholder="your@email.com"
-                  required
-                />
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                  <Input
+                    id="reset-email"
+                    name="email"
+                    type="email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    placeholder="your@email.com"
+                    required
+                    className="pl-10 bg-secondary/30 transition-all duration-300 hover:bg-secondary/50 focus:bg-background focus:ring-2"
+                  />
+                </div>
               </div>
               
               <div className="pt-2 flex flex-col gap-2">
-                <Button type="submit" disabled={isLoading}>
+                <Button type="submit" disabled={isLoading} variant="gradient">
                   {isLoading ? 'Sending...' : 'Send Reset Link'}
                 </Button>
                 
@@ -176,19 +183,19 @@ export const AuthForm: React.FC = () => {
       ) : (
         <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="login">Login</TabsTrigger>
-            <TabsTrigger value="signup">Sign Up</TabsTrigger>
+            <TabsTrigger value="login" className="transition-all duration-300 data-[state=active]:text-primary data-[state=active]:shadow-md">Login</TabsTrigger>
+            <TabsTrigger value="signup" className="transition-all duration-300 data-[state=active]:text-primary data-[state=active]:shadow-md">Sign Up</TabsTrigger>
           </TabsList>
           
-          <TabsContent value="login" className="mt-4">
-            <div className="space-y-6 bg-card p-8 rounded-lg shadow-sm border border-border">
+          <TabsContent value="login" className="mt-4 animate-fade-in">
+            <div className="space-y-6 bg-card p-8 rounded-lg shadow-card border border-border">
               <div className="text-center">
-                <h2 className="text-2xl font-semibold">Welcome Back</h2>
+                <h2 className="text-2xl font-semibold font-playfair text-gradient-blue-green">Welcome Back</h2>
                 <p className="text-sm text-muted-foreground mt-2">Sign in to your TownBook account</p>
               </div>
 
               {error && (
-                <div className="p-3 bg-destructive/10 text-destructive text-sm rounded-md">
+                <div className="p-3 bg-destructive/10 text-destructive text-sm rounded-md border border-destructive/20 shadow-sm animate-fade-in">
                   {error}
                 </div>
               )}
@@ -196,15 +203,19 @@ export const AuthForm: React.FC = () => {
               <form onSubmit={handleLogin} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    name="email"
-                    type="email"
-                    value={formData.email}
-                    onChange={handleChange}
-                    placeholder="your@email.com"
-                    required
-                  />
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                    <Input
+                      id="email"
+                      name="email"
+                      type="email"
+                      value={formData.email}
+                      onChange={handleChange}
+                      placeholder="your@email.com"
+                      required
+                      className="pl-10 bg-secondary/30 transition-all duration-300 hover:bg-secondary/50 focus:bg-background focus:ring-2"
+                    />
+                  </div>
                 </div>
                 
                 <div className="space-y-2">
@@ -213,100 +224,153 @@ export const AuthForm: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setShowForgotPassword(true)}
-                      className="text-sm text-primary hover:underline"
+                      className="text-sm text-primary hover:text-primary/80 hover:underline transition-colors duration-300"
                     >
                       Forgot Password?
                     </button>
                   </div>
-                  <Input
-                    id="password"
-                    name="password"
-                    type="password"
-                    value={formData.password}
-                    onChange={handleChange}
-                    placeholder="••••••••"
-                    required
-                  />
+                  <div className="relative">
+                    <Key className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                    <Input
+                      id="password"
+                      name="password"
+                      type={showPassword ? "text" : "password"}
+                      value={formData.password}
+                      onChange={handleChange}
+                      placeholder="••••••••"
+                      required
+                      className="pl-10 pr-10 bg-secondary/30 transition-all duration-300 hover:bg-secondary/50 focus:bg-background focus:ring-2"
+                    />
+                    <button 
+                      type="button" 
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
                 </div>
                 
                 <div className="pt-2">
-                  <Button type="submit" className="w-full" disabled={isLoading}>
-                    {isLoading ? 'Signing in...' : 'Sign In'}
+                  <Button type="submit" className="w-full" variant="gradient" disabled={isLoading}>
+                    {isLoading ? 
+                      <span className="flex items-center">
+                        <span className="loading-dot"></span>
+                        <span className="loading-dot"></span>
+                        <span className="loading-dot"></span>
+                      </span> : 
+                      'Sign In'
+                    }
                   </Button>
                 </div>
-
-
               </form>
             </div>
           </TabsContent>
           
-          <TabsContent value="signup" className="mt-4">
-            <div className="space-y-6 bg-card p-8 rounded-lg shadow-sm border border-border">
+          <TabsContent value="signup" className="mt-4 animate-fade-in">
+            <div className="space-y-6 bg-card p-8 rounded-lg shadow-card border border-border">
               <div className="text-center">
-                <h2 className="text-2xl font-semibold">Create an Account</h2>
+                <h2 className="text-2xl font-semibold font-playfair text-gradient-blue-green">Create an Account</h2>
                 <p className="text-sm text-muted-foreground mt-2">Join TownBook library community</p>
               </div>
 
               <form onSubmit={handleSignup} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="name">Full Name</Label>
-                  <Input
-                    id="name"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleChange}
-                    placeholder="John Doe"
-                    required
-                  />
+                  <div className="relative">
+                    <UserIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                    <Input
+                      id="name"
+                      name="name"
+                      value={formData.name}
+                      onChange={handleChange}
+                      placeholder="John Doe"
+                      required
+                      className="pl-10 bg-secondary/30 transition-all duration-300 hover:bg-secondary/50 focus:bg-background focus:ring-2"
+                    />
+                  </div>
                 </div>
                 
                 <div className="space-y-2">
                   <Label htmlFor="signup-email">Email</Label>
-                  <Input
-                    id="signup-email"
-                    name="email"
-                    type="email"
-                    value={formData.email}
-                    onChange={handleChange}
-                    placeholder="your@email.com"
-                    required
-                  />
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                    <Input
+                      id="signup-email"
+                      name="email"
+                      type="email"
+                      value={formData.email}
+                      onChange={handleChange}
+                      placeholder="your@email.com"
+                      required
+                      className="pl-10 bg-secondary/30 transition-all duration-300 hover:bg-secondary/50 focus:bg-background focus:ring-2"
+                    />
+                  </div>
                 </div>
                 
                 <div className="space-y-2">
                   <Label htmlFor="signup-password">Password</Label>
-                  <Input
-                    id="signup-password"
-                    name="password"
-                    type="password"
-                    value={formData.password}
-                    onChange={handleChange}
-                    placeholder="••••••••"
-                    required
-                  />
+                  <div className="relative">
+                    <Key className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                    <Input
+                      id="signup-password"
+                      name="password"
+                      type={showPassword ? "text" : "password"}
+                      value={formData.password}
+                      onChange={handleChange}
+                      placeholder="••••••••"
+                      required
+                      className="pl-10 pr-10 bg-secondary/30 transition-all duration-300 hover:bg-secondary/50 focus:bg-background focus:ring-2"
+                    />
+                    <button 
+                      type="button" 
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
                 </div>
                 
                 <div className="space-y-2">
                   <Label htmlFor="confirmPassword">Confirm Password</Label>
-                  <Input
-                    id="confirmPassword"
-                    name="confirmPassword"
-                    type="password"
-                    value={formData.confirmPassword}
-                    onChange={handleChange}
-                    placeholder="••••••••"
-                    required
-                  />
+                  <div className="relative">
+                    <Key className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                    <Input
+                      id="confirmPassword"
+                      name="confirmPassword"
+                      type={showConfirmPassword ? "text" : "password"}
+                      value={formData.confirmPassword}
+                      onChange={handleChange}
+                      placeholder="••••••••"
+                      required
+                      className="pl-10 pr-10 bg-secondary/30 transition-all duration-300 hover:bg-secondary/50 focus:bg-background focus:ring-2"
+                    />
+                    <button 
+                      type="button" 
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
                 </div>
                 
                 <div className="pt-2">
-                  <Button type="submit" className="w-full" disabled={isLoading}>
-                    {isLoading ? 'Creating Account...' : 'Create Account'}
+                  <Button type="submit" className="w-full" variant="gradient" disabled={isLoading}>
+                    {isLoading ? 
+                      <span className="flex items-center">
+                        <span className="loading-dot"></span>
+                        <span className="loading-dot"></span>
+                        <span className="loading-dot"></span>
+                      </span> : 
+                      'Create Account'
+                    }
                   </Button>
                 </div>
 
                 <p className="text-sm text-muted-foreground text-center">
-                  By signing up, you agree to our <a href="#" className="text-primary hover:underline">Terms of Service</a> and <a href="#" className="text-primary hover:underline">Privacy Policy</a>.
+                  By signing up, you agree to our <a href="#" className="text-primary hover:text-primary/80 hover:underline transition-colors">Terms of Service</a> and <a href="#" className="text-primary hover:text-primary/80 hover:underline transition-colors">Privacy Policy</a>.
                 </p>
               </form>
             </div>
