@@ -69,6 +69,9 @@ const config: Config = {
         'glow': '0 0 15px rgba(79, 209, 197, 0.5)',
         'vibrant': '0 5px 15px rgba(0, 0, 0, 0.1), 0 0 5px rgba(79, 209, 197, 0.5)',
         'card': '0 10px 30px -15px rgba(0, 0, 0, 0.1)',
+        'book': '0 10px 20px -10px rgba(0, 0, 0, 0.1), 0 0 8px rgba(79, 209, 197, 0.2)',
+        'hover-lift': '0 8px 30px rgba(0, 0, 0, 0.12), 0 2px 10px rgba(79, 209, 197, 0.2)',
+        'book-cover': '5px 5px 15px rgba(0, 0, 0, 0.15), -5px 0 10px rgba(0, 0, 0, 0.05)',
       },
       keyframes: {
         "accordion-down": {
@@ -103,6 +106,14 @@ const config: Config = {
           "0%": { backgroundPosition: "-1000px 0" },
           "100%": { backgroundPosition: "1000px 0" }
         },
+        "spin": {
+          "0%": { transform: "rotate(0deg)" },
+          "100%": { transform: "rotate(360deg)" }
+        },
+        "ping": {
+          "0%": { transform: "scale(1)", opacity: "1" },
+          "75%, 100%": { transform: "scale(2)", opacity: "0" }
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -113,6 +124,14 @@ const config: Config = {
         "scale-in": "scale-in 0.4s ease-out",
         "float": "float 6s ease-in-out infinite",
         "shimmer": "shimmer 2.5s infinite linear",
+        "spin": "spin 1s linear infinite",
+        "ping": "ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite",
+        "book-hover": "float 4s ease-in-out infinite",
+      },
+      transitionProperty: {
+        'height': 'height',
+        'spacing': 'margin, padding',
+        'glow': 'box-shadow, transform, border-color',
       },
     },
   },
