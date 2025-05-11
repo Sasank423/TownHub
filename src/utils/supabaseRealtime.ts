@@ -1,5 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
+import { RealtimeChannel } from '@supabase/supabase-js';
 import { ReservationStatus } from '../types/models';
 
 const REALTIME_LISTEN_DELAY = 2000;
@@ -9,35 +10,31 @@ const subscribeToTable = (
   table: string,
   event: 'INSERT' | 'UPDATE' | 'DELETE' | '*',
   callback: (payload: any) => void
-) => {
+): RealtimeChannel => {
   // Get current user ID
-  const userPromise = supabase.auth.getUser().then(({ data }) => data.user?.id);
+  const userId = supabase.auth.getUser().then(({ data }) => data.user?.id);
   
   // Create and return the subscription channel
-  return userPromise.then(userId => {
-    if (!userId) return null;
+  const channel = supabase
+    .channel(`public:${table}`)
+    .on(
+      'postgres_changes',
+      { event, schema: 'public', table },
+      (payload) => {
+        console.log('Change received!', payload);
+        callback(payload);
+      }
+    )
+    .subscribe();
 
-    const channel = supabase
-      .channel(`public:${table}`)
-      .on(
-        'postgres_changes',
-        { event, schema: 'public', table },
-        (payload) => {
-          console.log('Change received!', payload);
-          callback(payload);
-        }
-      )
-      .subscribe();
-
-    return channel;
-  });
+  return channel;
 };
 
 // Specific subscription for notifications with proper callback type
 const subscribeToNotifications = (
   userId: string, 
   callback: (payload: any) => void
-) => {
+): RealtimeChannel => {
   if (!userId) return null;
   
   const channel = supabase
@@ -60,7 +57,7 @@ const subscribeToNotifications = (
 const subscribeToReservations = (
   userId: string, 
   callback: (payload: any) => void
-) => {
+): RealtimeChannel => {
   if (!userId) return null;
 
   const channel = supabase
@@ -82,7 +79,7 @@ const subscribeToReservations = (
 const subscribeToMessages = (
   userId: string, 
   callback: (payload: any) => void
-) => {
+): RealtimeChannel => {
   if (!userId) return null;
   
   const channel = supabase
@@ -102,7 +99,7 @@ const subscribeToMessages = (
 };
 
 // Function to remove subscription
-const removeSubscription = async (channel: any) => {
+const removeSubscription = async (channel: RealtimeChannel): Promise<void> => {
   if (channel) {
     await supabase.removeChannel(channel);
   }
@@ -157,7 +154,19 @@ const getPendingBookRequests = async (): Promise<ActivityWithReservation[]> => {
     return [];
   }
 
-  return data || [];
+  // Handle cases where the join might not work correctly
+  const validData = (data || []).filter(item => {
+    // Only include items where reservations is a valid object with required fields
+    return item.reservations && 
+           typeof item.reservations === 'object' && 
+           'id' in item.reservations &&
+           'title' in item.reservations &&
+           'start_date' in item.reservations &&
+           'end_date' in item.reservations &&
+           'status' in item.reservations;
+  }) as ActivityWithReservation[];
+
+  return validData;
 };
 
 // Function to update reservation status

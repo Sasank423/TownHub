@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Book, Home, History, Barcode, Check, AlertCircle, Clock, Calendar } from 'lucide-react';
 import { format } from 'date-fns';
@@ -19,6 +18,7 @@ import {
 } from '@/components/ui/dialog';
 import { supabase } from '../integrations/supabase/client';
 import { subscribeToTable } from '../utils/supabaseRealtime';
+import { RealtimeChannel } from '@supabase/supabase-js';
 
 interface HistoryItem {
   id: string;
@@ -204,6 +204,18 @@ export const ReservationHistory: React.FC = () => {
       supabase.removeChannel(channel);
     };
   }, [toast]);
+
+  interface HistoryItem {
+    id: string;
+    title: string;
+    type: 'book' | 'room';
+    startDate: string;
+    endDate: string;
+    returnDate?: string;
+    status: 'Completed' | 'Overdue' | 'Returned' | 'Active' | 'Approved' | 'Pending' | 'Declined';
+    userId: string;
+    userName: string;
+  }
 
   const handleProcessReturn = (item: HistoryItem) => {
     setProcessingItem(item);
