@@ -11,9 +11,6 @@ const subscribeToTable = (
   event: 'INSERT' | 'UPDATE' | 'DELETE' | '*',
   callback: (payload: any) => void
 ): RealtimeChannel => {
-  // Get current user ID
-  const userId = supabase.auth.getUser().then(({ data }) => data.user?.id);
-  
   // Create and return the subscription channel
   const channel = supabase
     .channel(`public:${table}`)
@@ -159,18 +156,22 @@ const getPendingBookRequests = async (): Promise<ActivityWithReservation[]> => {
     // Only include items where reservations is a valid object with required fields
     return item.reservations && 
            typeof item.reservations === 'object' && 
-           'id' in item.reservations &&
-           'title' in item.reservations &&
-           'start_date' in item.reservations &&
-           'end_date' in item.reservations &&
-           'status' in item.reservations;
+           item.reservations.id &&
+           item.reservations.title &&
+           item.reservations.start_date &&
+           item.reservations.end_date &&
+           item.reservations.status;
   }) as ActivityWithReservation[];
 
   return validData;
 };
 
 // Function to update reservation status
-const updateReservationStatus = async (reservationId: string, status: ReservationStatus, activityId: string) => {
+const updateReservationStatus = async (
+  reservationId: string, 
+  status: ReservationStatus, 
+  activityId: string
+): Promise<boolean> => {
   try {
     // Update the reservation status
     const { error: reservationError } = await supabase

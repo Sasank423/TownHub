@@ -140,25 +140,4 @@ export const ActivityFeed: React.FC = () => {
       </div>
     </div>
   );
-
-  function getActivityIcon(action: string) {
-    switch (action) {
-      case 'reservation':
-        return <Book className="h-5 w-5 text-blue-500 dark:text-blue-400" />;
-      case 'return':
-        return <CheckCircle className="h-5 w-5 text-green-500 dark:text-green-400" />;
-      case 'approval':
-        return <CheckCircle className="h-5 w-5 text-purple-500 dark:text-purple-400" />;
-      case 'new_item':
-        return <Database className="h-5 w-5 text-amber-500 dark:text-amber-400" />;
-      case 'new_member':
-        return <User className="h-5 w-5 text-primary dark:text-primary" />;
-      default:
-        return <Clock className="h-5 w-5 text-gray-500 dark:text-gray-400" />;
-    }
-  }
-
-  function getTimeAgo(dateString: string) {
-    return formatDistance(new Date(dateString), new Date(), { addSuffix: true });
-  }
 };
