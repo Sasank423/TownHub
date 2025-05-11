@@ -25,6 +25,8 @@ import ReportIssue from "./pages/ReportIssue";
 import AddBooks from "./pages/AddBooks";
 import RoomManagement from "./pages/RoomManagement";
 import ActiveReservations from "./pages/ActiveReservations";
+import MemberManagement from "./pages/MemberManagement";
+import BookManagement from "./pages/BookManagement";
 
 const queryClient = new QueryClient();
 
@@ -68,7 +70,9 @@ const AppRoutes = () => {
         {/* Librarian routes */}
         <Route path="/librarian" element={<ProtectedRoute element={<LibrarianDashboard />} requiredRole="librarian" />} />
         <Route path="/add-books" element={<ProtectedRoute element={<AddBooks />} requiredRole="librarian" />} />
+        <Route path="/book-management" element={<ProtectedRoute element={<BookManagement />} requiredRole="librarian" />} />
         <Route path="/room-management" element={<ProtectedRoute element={<RoomManagement />} requiredRole="librarian" />} />
+        <Route path="/member-management" element={<ProtectedRoute element={<MemberManagement />} requiredRole="librarian" />} />
         
         {/* Book routes */}
         <Route path="/catalog" element={<ProtectedRoute element={<Catalog />} />} />

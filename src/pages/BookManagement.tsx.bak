@@ -1,0 +1,1320 @@
+import React, { useState, useEffect } from 'react';
+import { DashboardLayout } from '../components/DashboardLayout';
+import { useAuth } from '../contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { BookPlus, Loader2, Upload, Image as ImageIcon, Book, Search, Edit, Trash2, Plus, Filter, RefreshCw, BookOpen } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/components/ui/sonner';
+import { Badge } from '@/components/ui/badge';
+import { v4 as uuidv4 } from 'uuid';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+
+interface BookData {
+  id: string;
+  title: string;
+  author: string;
+  cover_image: string;
+  description: string;
+  page_count: number;
+  publication_year: number;
+  publisher: string;
+  genres: string[];
+  isbn: string;
+  language: string;
+  created_at: string;
+  updated_at: string;
+  copies_available?: number;
+  total_copies?: number;
+  added_date?: string;
+  rating?: number;
+}
+
+interface BookFormData {
+  title: string;
+  author: string;
+  cover_image: string;
+  description: string;
+  page_count: number;
+  publication_year: number;
+  publisher: string;
+  genres: string[];
+  isbn: string;
+  language: string;
+}
+
+const BookManagement = () => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const [books, setBooks] = useState<BookData[]>([]);
+  const [filteredBooks, setFilteredBooks] = useState<BookData[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [isAddBookDialogOpen, setIsAddBookDialogOpen] = useState(false);
+  const [isEditBookDialogOpen, setIsEditBookDialogOpen] = useState(false);
+  const [isDeleteBookDialogOpen, setIsDeleteBookDialogOpen] = useState(false);
+  const [selectedBook, setSelectedBook] = useState<BookData | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [genreFilter, setGenreFilter] = useState('all');
+  const [availabilityFilter, setAvailabilityFilter] = useState('all');
+  
+  // Form state for adding/editing a book
+  const [genreInput, setGenreInput] = useState('');
+  const [bookFormData, setBookFormData] = useState<BookFormData>({
+    title: '',
+    author: '',
+    cover_image: '',
+    description: '',
+    page_count: 0,
+    publication_year: new Date().getFullYear(),
+    publisher: '',
+    genres: [],
+    isbn: '',
+    language: 'English'
+  });
+  
+  const [uploading, setUploading] = useState(false);
+
+  // Redirect if not a librarian
+  React.useEffect(() => {
+    if (user && user.role !== 'librarian') {
+      navigate('/');
+    }
+  }, [user, navigate]);
+
+  // Fetch all books
+  useEffect(() => {
+    const fetchBooks = async () => {
+      try {
+        setLoading(true);
+        
+        // Get all books
+        const { data: booksData, error: booksError } = await supabase
+          .from('books')
+          .select('*');
+          
+        if (booksError) throw booksError;
+        
+        if (booksData) {
+          // For each book, get the count of available copies
+          const booksWithCopies = await Promise.all(booksData.map(async (book) => {
+            // Get total copies
+            const { count: totalCopies } = await supabase
+              .from('book_copies')
+              .select('id', { count: 'exact', head: true })
+              .eq('book_id', book.id);
+              
+            // Get available copies
+            const { count: availableCopies } = await supabase
+              .from('book_copies')
+              .select('id', { count: 'exact', head: true })
+              .eq('book_id', book.id)
+              .eq('status', 'available');
+              
+            return {
+              ...book,
+              copies_available: availableCopies || 0,
+              total_copies: totalCopies || 0,
+              created_at: book.created_at || new Date().toISOString(),
+              updated_at: book.updated_at || new Date().toISOString()
+            } as BookData;
+          }));
+          
+          setBooks(booksWithCopies);
+          setFilteredBooks(booksWithCopies);
+        }
+      } catch (error) {
+        console.error('Error fetching books:', error);
+        toast.error('Failed to load books');
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchBooks();
+  }, []);
+  
+  // Filter books based on search query, genre filter, and availability filter
+  useEffect(() => {
+    let result = books;
+    
+    // Apply search filter
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      result = result.filter(book => 
+        book.title.toLowerCase().includes(query) || 
+        book.author.toLowerCase().includes(query) ||
+        book.isbn.toLowerCase().includes(query)
+      );
+    }
+    
+    // Apply genre filter
+    if (genreFilter !== 'all') {
+      result = result.filter(book => 
+        book.genres && book.genres.includes(genreFilter)
+      );
+    }
+    
+    // Apply availability filter
+    if (availabilityFilter === 'available') {
+      result = result.filter(book => 
+        (book.copies_available || 0) > 0
+      );
+    } else if (availabilityFilter === 'unavailable') {
+      result = result.filter(book => 
+        (book.copies_available || 0) === 0
+      );
+    }
+    
+    setFilteredBooks(result);
+  }, [searchQuery, genreFilter, availabilityFilter, books]);
+
+  // Handle form input change
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setBookFormData(prev => ({
+      ...prev,
+      [name]: name === 'page_count' || name === 'publication_year' ? parseInt(value) || 0 : value
+    }));
+  };
+
+  // Add genre to form data
+  const addGenre = () => {
+    if (genreInput.trim() && !bookFormData.genres.includes(genreInput.trim())) {
+      setBookFormData(prev => ({
+        ...prev,
+        genres: [...prev.genres, genreInput.trim()]
+      }));
+      setGenreInput('');
+    }
+  };
+
+  // Remove genre from form data
+  const removeGenre = (genre: string) => {
+    setBookFormData(prev => ({
+      ...prev,
+      genres: prev.genres.filter(g => g !== genre)
+    }));
+  };
+  
+  // Handle image upload
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (!event.target.files || event.target.files.length === 0) {
+      return;
+    }
+
+    setUploading(true);
+    console.log('Starting book cover image upload...');
+
+    try {
+      const file = event.target.files[0];
+      
+      // Check file size (max 2MB)
+      if (file.size > 2 * 1024 * 1024) {
+        toast.error('Image size exceeds 2MB limit');
+        setUploading(false);
+        return;
+      }
+      
+      console.log('File selected:', file.name, 'Size:', file.size, 'Type:', file.type);
+      
+      const fileExt = file.name.split('.').pop();
+      const fileName = `book_cover_${uuidv4()}.${fileExt}`;
+      
+      // Read the file as a data URL (base64)
+      const reader = new FileReader();
+      
+      // Create a promise to handle the FileReader async operation
+      const readFileAsDataURL = new Promise<string>((resolve, reject) => {
+        reader.onload = () => {
+          if (typeof reader.result === 'string') {
+            resolve(reader.result);
+          } else {
+            reject(new Error('Failed to read file as data URL'));
+          }
+        };
+        reader.onerror = () => reject(reader.error);
+        reader.readAsDataURL(file);
+      });
+      
+      try {
+        // Wait for the file to be read as a data URL
+        const dataUrl = await readFileAsDataURL;
+        console.log('File read as data URL successfully');
+        
+        // Use the data URL as the image source
+        setBookFormData({
+          ...bookFormData,
+          cover_image: dataUrl
+        });
+        
+        toast.success('Cover image uploaded successfully');
+      } catch (readError) {
+        console.error('Error reading file:', readError);
+        
+        // Fallback to a placeholder image
+        const placeholderUrl = `https://placehold.co/400x600/1e293b/ffffff?text=${encodeURIComponent(bookFormData.title || 'Book Cover')}`;
+        setBookFormData({
+          ...bookFormData,
+          cover_image: placeholderUrl
+        });
+        toast.error('Failed to read image, using placeholder');
+      }
+    } catch (error: any) {
+      console.error('Error uploading image:', error);
+      toast.error(error.message || 'Failed to upload image');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  // Add a new book
+  const handleAddBook = async () => {
+    if (!bookFormData.title || !bookFormData.author) {
+      toast.error('Title and author are required');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      
+      // Insert book into database
+      const { data, error } = await supabase
+        .from('books')
+        .insert([
+          {
+            title: bookFormData.title,
+            author: bookFormData.author,
+            cover_image: bookFormData.cover_image || null,
+            description: bookFormData.description || null,
+            page_count: bookFormData.page_count || null,
+            publication_year: bookFormData.publication_year || null,
+            publisher: bookFormData.publisher || null,
+            genres: bookFormData.genres.length > 0 ? bookFormData.genres : null,
+            isbn: bookFormData.isbn || null,
+            language: bookFormData.language || 'English'
+          }
+        ])
+        .select();
+      
+      if (error) throw error;
+      
+      // Add a default book copy
+      if (data && data[0]) {
+        const { error: copyError } = await supabase
+          .from('book_copies')
+          .insert([
+            {
+              book_id: data[0].id,
+              status: 'available',
+              location: 'Main Library',
+              condition: 'New'
+            }
+          ]);
+        
+        if (copyError) throw copyError;
+      }
+      
+      toast.success('Book added successfully!');
+      
+      // Reset form
+      setBookFormData({
+        title: '',
+        author: '',
+        cover_image: '',
+        description: '',
+        page_count: 0,
+        publication_year: new Date().getFullYear(),
+        publisher: '',
+        genres: [],
+        isbn: '',
+        language: 'English'
+      });
+      
+      // Close dialog
+      setIsAddBookDialogOpen(false);
+      
+      // Refresh books list
+      const { data: refreshedBooks, error: refreshError } = await supabase
+        .from('books')
+        .select('*');
+        
+      if (refreshError) throw refreshError;
+      
+      if (refreshedBooks) {
+        // For each book, get the count of available copies
+        const booksWithCopies = await Promise.all(refreshedBooks.map(async (book) => {
+          // Get total copies
+          const { count: totalCopies } = await supabase
+            .from('book_copies')
+            .select('id', { count: 'exact', head: true })
+            .eq('book_id', book.id);
+            
+          // Get available copies
+          const { count: availableCopies } = await supabase
+            .from('book_copies')
+            .select('id', { count: 'exact', head: true })
+            .eq('book_id', book.id)
+            .eq('status', 'available');
+            
+          return {
+            ...book,
+            copies_available: availableCopies || 0,
+            total_copies: totalCopies || 0
+          };
+        }));
+        
+        setBooks(booksWithCopies);
+        setFilteredBooks(booksWithCopies);
+      }
+      
+    } catch (error: any) {
+      console.error('Error adding book:', error);
+      toast.error(`Failed to add book: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  // Update book
+  const handleUpdateBook = async () => {
+    if (!selectedBook) return;
+    
+    try {
+      setLoading(true);
+      
+      const { error } = await supabase
+        .from('books')
+        .update({
+          title: bookFormData.title,
+          author: bookFormData.author,
+          cover_image: bookFormData.cover_image || null,
+          description: bookFormData.description || null,
+          page_count: bookFormData.page_count || null,
+          publication_year: bookFormData.publication_year || null,
+          publisher: bookFormData.publisher || null,
+          genres: bookFormData.genres.length > 0 ? bookFormData.genres : null,
+          isbn: bookFormData.isbn || null,
+          language: bookFormData.language || 'English',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', selectedBook.id);
+        
+      if (error) throw error;
+      
+      toast.success('Book updated successfully!');
+      
+      // Close dialog
+      setIsEditBookDialogOpen(false);
+      
+      // Refresh books list
+      const { data: refreshedBooks, error: refreshError } = await supabase
+        .from('books')
+        .select('*');
+        
+      if (refreshError) throw refreshError;
+      
+      if (refreshedBooks) {
+        // For each book, get the count of available copies
+        const booksWithCopies = await Promise.all(refreshedBooks.map(async (book) => {
+          // Get total copies
+          const { count: totalCopies } = await supabase
+            .from('book_copies')
+            .select('id', { count: 'exact', head: true })
+            .eq('book_id', book.id);
+            
+          // Get available copies
+          const { count: availableCopies } = await supabase
+            .from('book_copies')
+            .select('id', { count: 'exact', head: true })
+            .eq('book_id', book.id)
+            .eq('status', 'available');
+            
+          return {
+            ...book,
+            copies_available: availableCopies || 0,
+            total_copies: totalCopies || 0
+          };
+        }));
+        
+        setBooks(booksWithCopies);
+        setFilteredBooks(booksWithCopies);
+      }
+      
+    } catch (error: any) {
+      console.error('Error updating book:', error);
+      toast.error(`Failed to update book: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  // Delete book
+  const handleDeleteBook = async () => {
+    if (!selectedBook) return;
+    
+    try {
+      setLoading(true);
+      
+      // First delete all book copies
+      const { error: copiesError } = await supabase
+        .from('book_copies')
+        .delete()
+        .eq('book_id', selectedBook.id);
+        
+      if (copiesError) throw copiesError;
+      
+      // Then delete the book
+      const { error } = await supabase
+        .from('books')
+        .delete()
+        .eq('id', selectedBook.id);
+        
+      if (error) throw error;
+      
+      toast.success('Book deleted successfully!');
+      
+      // Close dialog
+      setIsDeleteBookDialogOpen(false);
+      
+      // Update local state
+      setBooks(books.filter(book => book.id !== selectedBook.id));
+      setFilteredBooks(filteredBooks.filter(book => book.id !== selectedBook.id));
+      
+    } catch (error: any) {
+      console.error('Error deleting book:', error);
+      toast.error(`Failed to delete book: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  // Get all unique genres from books
+  const allGenres = [...new Set(books.flatMap(book => book.genres || []))];
+  
+  // Format date
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  };
+
+  // Initialize edit form data when a book is selected for editing
+  const initializeEditForm = (book: BookData) => {
+    setBookFormData({
+      title: book.title,
+      author: book.author,
+      cover_image: book.cover_image,
+      description: book.description,
+      page_count: book.page_count,
+      publication_year: book.publication_year,
+      publisher: book.publisher,
+      genres: book.genres || [],
+      isbn: book.isbn,
+      language: book.language
+    });
+  };
+
+  return (
+    <DashboardLayout 
+      title="Book Management" 
+      breadcrumbs={[
+        { label: 'Dashboard', path: '/librarian' }, 
+        { label: 'Book Management' }
+      ]}
+    >
+      <div className="space-y-6">
+        {/* Controls */}
+        <div className="flex flex-col sm:flex-row justify-between gap-4">
+          <div className="flex flex-1 items-center space-x-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                type="search"
+                placeholder="Search books..."
+                className="pl-8"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+            
+            <Select value={genreFilter} onValueChange={setGenreFilter}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Filter by genre" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Genres</SelectItem>
+                {allGenres.map(genre => (
+                  <SelectItem key={genre} value={genre}>{genre}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            
+            <Select value={availabilityFilter} onValueChange={setAvailabilityFilter}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Filter by availability" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Books</SelectItem>
+                <SelectItem value="available">Available</SelectItem>
+                <SelectItem value="unavailable">Unavailable</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          
+          <Button onClick={() => setIsAddBookDialogOpen(true)} className="gap-2">
+            <BookPlus size={16} />
+            Add New Book
+          </Button>
+        </div>
+        
+        {/* Books List */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Library Books</CardTitle>
+            <CardDescription>
+              Manage library books and copies
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {loading ? (
+              <div className="space-y-4">
+                {[1, 2, 3].map((_, i) => (
+                  <div key={i} className="flex items-center space-x-4 rounded-md border p-4">
+                    <div className="h-16 w-12 rounded bg-gray-200 animate-pulse" />
+                    <div className="space-y-2 flex-1">
+                      <div className="h-4 w-1/4 bg-gray-200 rounded animate-pulse" />
+                      <div className="h-3 w-1/3 bg-gray-100 rounded animate-pulse" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : filteredBooks.length === 0 ? (
+              <div className="text-center py-10">
+                <Book className="h-10 w-10 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-lg font-medium">No books found</h3>
+                <p className="text-muted-foreground mt-2">
+                  {searchQuery || genreFilter !== 'all' || availabilityFilter !== 'all' ? 
+                    'Try adjusting your search or filters' : 
+                    'Start by adding a new book'}
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {filteredBooks.map((book) => (
+                  <div key={book.id} className="flex flex-col sm:flex-row sm:items-center justify-between space-y-2 sm:space-y-0 rounded-md border p-4 transition-colors hover:bg-muted/50">
+                    <div className="flex items-center space-x-4">
+                      {book.cover_image ? (
+                        <img 
+                          src={book.cover_image} 
+                          alt={`${book.title} cover`} 
+                          className="h-16 w-12 object-cover rounded" 
+                        />
+                      ) : (
+                        <div className="h-16 w-12 bg-muted flex items-center justify-center rounded">
+                          <BookOpen className="h-6 w-6 text-muted-foreground" />
+                        </div>
+                      )}
+                      <div>
+                        <div className="font-medium">{book.title}</div>
+                        <div className="text-sm text-muted-foreground">by {book.author}</div>
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {book.genres && book.genres.slice(0, 2).map(genre => (
+                            <Badge key={genre} variant="outline" className="text-xs">
+                              {genre}
+                            </Badge>
+                          ))}
+                          {book.genres && book.genres.length > 2 && (
+                            <Badge variant="outline" className="text-xs">
+                              +{book.genres.length - 2} more
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="flex flex-wrap items-center gap-2 sm:gap-4">
+                      <div className="text-sm text-muted-foreground">
+                        {book.publication_year && <span>Published: {book.publication_year}</span>}
+                      </div>
+                      
+                      <div className="flex items-center gap-2">
+                        <Badge variant={book.copies_available && book.copies_available > 0 ? 'default' : 'destructive'}>
+                          {book.copies_available}/{book.total_copies} Available
+                        </Badge>
+                      </div>
+                      
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem onClick={() => {
+                            setSelectedBook(book);
+                            initializeEditForm(book);
+                            setIsEditBookDialogOpen(true);
+                          }}>
+                            <Edit className="h-4 w-4 mr-2" /> Edit Book
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => {
+                            setSelectedBook(book);
+                            setIsDeleteBookDialogOpen(true);
+                          }}>
+                            <Trash2 className="h-4 w-4 mr-2" /> Delete Book
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+          <CardFooter className="flex justify-between">
+            <div className="text-sm text-muted-foreground">
+              Showing {filteredBooks.length} of {books.length} books
+            </div>
+            <Button variant="outline" size="sm" className="gap-1" onClick={() => {
+              setLoading(true);
+              setTimeout(() => {
+                setLoading(false);
+              }, 500);
+            }}>
+              <RefreshCw className="h-3 w-3" /> Refresh
+            </Button>
+          </CardFooter>
+        </Card>
+      </div>
+
+      {/* Add Book Dialog */}
+      <Dialog open={isAddBookDialogOpen} onOpenChange={setIsAddBookDialogOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Add New Book</DialogTitle>
+            <DialogDescription>
+              Add a new book to the library catalog
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="grid gap-6 py-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Title */}
+              <div className="space-y-2">
+                <Label htmlFor="title" className="required">Title</Label>
+                <Input
+                  id="title"
+                  name="title"
+                  value={bookFormData.title}
+                  onChange={handleInputChange}
+                  placeholder="Book title"
+                  required
+                />
+              </div>
+              
+              {/* Author */}
+              <div className="space-y-2">
+                <Label htmlFor="author" className="required">Author</Label>
+                <Input
+                  id="author"
+                  name="author"
+                  value={bookFormData.author}
+                  onChange={handleInputChange}
+                  placeholder="Author name"
+                  required
+                />
+              </div>
+              
+              {/* ISBN */}
+              <div className="space-y-2">
+                <Label htmlFor="isbn">ISBN</Label>
+                <Input
+                  id="isbn"
+                  name="isbn"
+                  value={bookFormData.isbn}
+                  onChange={handleInputChange}
+                  placeholder="ISBN number"
+                />
+              </div>
+              
+              {/* Publisher */}
+              <div className="space-y-2">
+                <Label htmlFor="publisher">Publisher</Label>
+                <Input
+                  id="publisher"
+                  name="publisher"
+                  value={bookFormData.publisher}
+                  onChange={handleInputChange}
+                  placeholder="Publisher name"
+                />
+              </div>
+              
+              {/* Publication Year */}
+              <div className="space-y-2">
+                <Label htmlFor="publication_year">Publication Year</Label>
+                <Input
+                  id="publication_year"
+                  name="publication_year"
+                  type="number"
+                  value={bookFormData.publication_year}
+                  onChange={handleInputChange}
+                  placeholder="Publication year"
+                />
+              </div>
+              
+              {/* Page Count */}
+              <div className="space-y-2">
+                <Label htmlFor="page_count">Page Count</Label>
+                <Input
+                  id="page_count"
+                  name="page_count"
+                  type="number"
+                  value={bookFormData.page_count}
+                  onChange={handleInputChange}
+                  placeholder="Number of pages"
+                />
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </DashboardLayout>
+  );
+
+          <DialogTitle>Add New Book</DialogTitle>
+          <DialogDescription>
+            Add a new book to the library catalog
+          </DialogDescription>
+        </DialogHeader>
+        
+        <div className="grid gap-6 py-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Title */}
+            <div className="space-y-2">
+              <Label htmlFor="title" className="required">Title</Label>
+              <Input
+                id="title"
+                name="title"
+                value={bookFormData.title}
+                onChange={handleInputChange}
+                placeholder="Book title"
+                required
+              />
+            </div>
+            
+            {/* Author */}
+            <div className="space-y-2">
+              <Label htmlFor="author" className="required">Author</Label>
+              <Input
+                id="author"
+                name="author"
+                value={bookFormData.author}
+                onChange={handleInputChange}
+                placeholder="Author name"
+                required
+              />
+            </div>
+            
+            {/* ISBN */}
+            <div className="space-y-2">
+              <Label htmlFor="isbn">ISBN</Label>
+              <Input
+                id="isbn"
+                name="isbn"
+                value={bookFormData.isbn}
+                onChange={handleInputChange}
+                placeholder="ISBN number"
+              />
+            </div>
+            
+            {/* Publisher */}
+            <div className="space-y-2">
+              <Label htmlFor="publisher">Publisher</Label>
+              <Input
+                id="publisher"
+                name="publisher"
+                value={bookFormData.publisher}
+                onChange={handleInputChange}
+                placeholder="Publisher name"
+              />
+            </div>
+            
+            {/* Publication Year */}
+            <div className="space-y-2">
+              <Label htmlFor="publication_year">Publication Year</Label>
+              <Input
+                id="publication_year"
+                name="publication_year"
+                type="number"
+                value={bookFormData.publication_year}
+                onChange={handleInputChange}
+                placeholder="Publication year"
+              />
+            </div>
+            
+            {/* Page Count */}
+            <div className="space-y-2">
+              <Label htmlFor="page_count">Page Count</Label>
+              <Input
+                id="page_count"
+                name="page_count"
+                type="number"
+                value={bookFormData.page_count}
+                onChange={handleInputChange}
+                placeholder="Number of pages"
+              />
+            </div>
+            
+            {/* Language */}
+            <div className="space-y-2">
+              <Label htmlFor="language">Language</Label>
+              <Input
+                id="language"
+                name="language"
+                value={bookFormData.language}
+                onChange={handleInputChange}
+                placeholder="Book language"
+              />
+            </div>
+            
+            {/* Cover Image Upload */}
+            <div className="space-y-2">
+              <Label htmlFor="cover_image">Cover Image</Label>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <div className="flex items-center justify-center w-full">
+                    <label htmlFor="cover-image-upload" className="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed rounded-lg cursor-pointer bg-muted/40 hover:bg-muted/60 transition-colors">
+                      <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                        {uploading ? (
+                          <Loader2 className="w-8 h-8 text-primary animate-spin mb-2" />
+                        ) : (
+                          <Upload className="w-8 h-8 text-muted-foreground mb-2" />
+                        )}
+                        <p className="mb-2 text-sm text-muted-foreground">
+                          <span className="font-semibold">Click to upload</span> or drag and drop
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          PNG, JPG or WEBP (MAX. 2MB)
+                        </p>
+                      </div>
+                      <input 
+                        id="cover-image-upload" 
+                        type="file" 
+                        className="hidden" 
+                        accept="image/png, image/jpeg, image/webp"
+                        onChange={handleImageUpload}
+                        disabled={uploading}
+                      />
+                    </label>
+                  </div>
+                </div>
+                
+                {/* Image Preview */}
+                <div className="flex items-center justify-center">
+                  {bookFormData.cover_image ? (
+                    <div className="relative group">
+                      <img 
+                        src={bookFormData.cover_image} 
+                        alt="Book cover preview" 
+                        className="h-40 object-contain rounded-md" 
+                      />
+                      <button
+                        type="button"
+                        className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={() => setBookFormData({...bookFormData, cover_image: ''})}
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center text-muted-foreground">
+                      <ImageIcon className="w-8 h-8 mb-2" />
+                      <p className="text-sm">No image uploaded</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          {/* Description */}
+          <div className="space-y-2">
+            <Label htmlFor="description">Description</Label>
+            <Textarea
+              id="description"
+              name="description"
+              value={bookFormData.description}
+              onChange={handleInputChange}
+              placeholder="Book description"
+              className="min-h-[100px]"
+            />
+          </div>
+          
+          {/* Genres */}
+          <div className="space-y-2">
+            <Label htmlFor="genres">Genres</Label>
+            <div className="flex space-x-2">
+              <Input
+                id="genre-input"
+                value={genreInput}
+                onChange={(e) => setGenreInput(e.target.value)}
+                placeholder="Add a genre"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    addGenre();
+                  }
+                }}
+              />
+              <Button 
+                type="button" 
+                onClick={(e) => {
+                  e.preventDefault();
+                  addGenre();
+                }} 
+                variant="outline"
+              >
+                Add
+              </Button>
+            </div>
+            
+            {/* Display selected genres */}
+            <div className="flex flex-wrap gap-2 mt-2">
+              {bookFormData.genres.map(genre => (
+                <Badge 
+                  key={genre} 
+                  variant="secondary"
+                  className="flex items-center gap-1"
+                >
+                  {genre}
+                  <button
+                    type="button"
+                    className="ml-1 rounded-full hover:bg-muted"
+                    onClick={() => removeGenre(genre)}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                  </button>
+                </Badge>
+              ))}
+            </div>
+          </div>
+        </div>
+        
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setIsAddBookDialogOpen(false)}>Cancel</Button>
+          <Button onClick={handleAddBook} disabled={loading}>
+            {loading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Adding...
+              </>
+            ) : (
+              <>Add Book</>
+            )}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+    
+    {/* Edit Book Dialog */}
+    <Dialog open={isEditBookDialogOpen} onOpenChange={setIsEditBookDialogOpen}>
+      <DialogContent className="sm:max-w-[600px]">
+        <DialogHeader>
+          <DialogTitle>Edit Book</DialogTitle>
+          <DialogDescription>
+            Update book details in the library catalog
+          </DialogDescription>
+        </DialogHeader>
+        
+        {selectedBook && (
+          <div className="grid gap-6 py-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Title */}
+              <div className="space-y-2">
+                <Label htmlFor="edit-title" className="required">Title</Label>
+                <Input
+                  id="edit-title"
+                  name="title"
+                  value={bookFormData.title}
+                  onChange={handleInputChange}
+                  placeholder="Book title"
+                  required
+                />
+              </div>
+              
+              {/* Author */}
+              <div className="space-y-2">
+                <Label htmlFor="edit-author" className="required">Author</Label>
+                <Input
+                  id="edit-author"
+                  name="author"
+                  value={bookFormData.author}
+                  onChange={handleInputChange}
+                  placeholder="Author name"
+                  required
+                />
+              </div>
+              
+              {/* ISBN */}
+              <div className="space-y-2">
+                <Label htmlFor="edit-isbn">ISBN</Label>
+                <Input
+                  id="edit-isbn"
+                  name="isbn"
+                  value={bookFormData.isbn}
+                  onChange={handleInputChange}
+                  placeholder="ISBN number"
+                />
+              </div>
+              
+              {/* Publisher */}
+              <div className="space-y-2">
+                <Label htmlFor="edit-publisher">Publisher</Label>
+                <Input
+                  id="edit-publisher"
+                  name="publisher"
+                  value={bookFormData.publisher}
+                  onChange={handleInputChange}
+                  placeholder="Publisher name"
+                />
+              </div>
+              
+              {/* Publication Year */}
+              <div className="space-y-2">
+                <Label htmlFor="edit-publication_year">Publication Year</Label>
+                <Input
+                  id="edit-publication_year"
+                  name="publication_year"
+                  type="number"
+                  value={bookFormData.publication_year}
+                  onChange={handleInputChange}
+                  placeholder="Publication year"
+                />
+              </div>
+              
+              {/* Page Count */}
+              <div className="space-y-2">
+                <Label htmlFor="edit-page_count">Page Count</Label>
+                <Input
+                  id="edit-page_count"
+                  name="page_count"
+                  type="number"
+                  value={bookFormData.page_count}
+                  onChange={handleInputChange}
+                  placeholder="Number of pages"
+                />
+              </div>
+              
+              {/* Language */}
+              <div className="space-y-2">
+                <Label htmlFor="edit-language">Language</Label>
+                <Input
+                  id="edit-language"
+                  name="language"
+                  value={bookFormData.language}
+                  onChange={handleInputChange}
+                  placeholder="Book language"
+                />
+              </div>
+              
+              {/* Cover Image Upload */}
+              <div className="space-y-2">
+                <Label htmlFor="edit-cover_image">Cover Image</Label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <div className="flex items-center justify-center w-full">
+                      <label htmlFor="edit-cover-image-upload" className="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed rounded-lg cursor-pointer bg-muted/40 hover:bg-muted/60 transition-colors">
+                        <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                          {uploading ? (
+                            <Loader2 className="w-8 h-8 text-primary animate-spin mb-2" />
+                          ) : (
+                            <Upload className="w-8 h-8 text-muted-foreground mb-2" />
+                          )}
+                          <p className="mb-2 text-sm text-muted-foreground">
+                            <span className="font-semibold">Click to upload</span> or drag and drop
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            PNG, JPG or WEBP (MAX. 2MB)
+                          </p>
+                        </div>
+                        <input 
+                          id="edit-cover-image-upload" 
+                          type="file" 
+                          className="hidden" 
+                          accept="image/png, image/jpeg, image/webp"
+                          onChange={handleImageUpload}
+                          disabled={uploading}
+                        />
+                      </label>
+                    </div>
+                  </div>
+                  
+                  {/* Image Preview */}
+                  <div className="flex items-center justify-center">
+                    {bookFormData.cover_image ? (
+                      <div className="relative group">
+                        <img 
+                          src={bookFormData.cover_image} 
+                          alt="Book cover preview" 
+                          className="h-40 object-contain rounded-md" 
+                        />
+                        <button
+                          type="button"
+                          className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={() => setBookFormData({...bookFormData, cover_image: ''})}
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center justify-center text-muted-foreground">
+                        <ImageIcon className="w-8 h-8 mb-2" />
+                        <p className="text-sm">No image uploaded</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            {/* Description */}
+            <div className="space-y-2">
+              <Label htmlFor="edit-description">Description</Label>
+              <Textarea
+                id="edit-description"
+                name="description"
+                value={bookFormData.description}
+                onChange={handleInputChange}
+                placeholder="Book description"
+                className="min-h-[100px]"
+              />
+            </div>
+            
+            {/* Genres */}
+            <div className="space-y-2">
+              <Label htmlFor="edit-genres">Genres</Label>
+              <div className="flex space-x-2">
+                <Input
+                  id="edit-genre-input"
+                  value={genreInput}
+                  onChange={(e) => setGenreInput(e.target.value)}
+                  placeholder="Add a genre"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      addGenre();
+                    }
+                  }}
+                />
+                <Button 
+                  type="button" 
+                  onClick={(e) => {
+                    e.preventDefault();
+                    addGenre();
+                  }} 
+                  variant="outline"
+                >
+                  Add
+                </Button>
+              </div>
+              
+              {/* Display selected genres */}
+              <div className="flex flex-wrap gap-2 mt-2">
+                {bookFormData.genres.map(genre => (
+                  <Badge 
+                    key={genre} 
+                    variant="secondary"
+                    className="flex items-center gap-1"
+                  >
+                    {genre}
+                    <button
+                      type="button"
+                      className="ml-1 rounded-full hover:bg-muted"
+                      onClick={() => removeGenre(genre)}
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                    </button>
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+        
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setIsEditBookDialogOpen(false)}>Cancel</Button>
+          <Button onClick={handleUpdateBook} disabled={loading}>
+            {loading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Updating...
+              </>
+            ) : (
+              <>Save Changes</>
+            )}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+    
+    {/* Delete Book Dialog */}
+    <Dialog open={isDeleteBookDialogOpen} onOpenChange={setIsDeleteBookDialogOpen}>
+      <DialogContent className="sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle>Delete Book</DialogTitle>
+          <DialogDescription>
+            Are you sure you want to delete this book? This action cannot be undone.
+          </DialogDescription>
+        </DialogHeader>
+        
+        {selectedBook && (
+          <div className="flex items-center space-x-4 py-4">
+            {selectedBook.cover_image ? (
+              <img 
+                src={selectedBook.cover_image} 
+                alt={`${selectedBook.title} cover`} 
+                className="h-16 w-12 object-cover rounded" 
+              />
+            ) : (
+              <div className="h-16 w-12 bg-muted flex items-center justify-center rounded">
+                <BookOpen className="h-6 w-6 text-muted-foreground" />
+              </div>
+            )}
+            <div>
+              <div className="font-medium">{selectedBook.title}</div>
+              <div className="text-sm text-muted-foreground">by {selectedBook.author}</div>
+            </div>
+          </div>
+        )}
+        
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setIsDeleteBookDialogOpen(false)}>Cancel</Button>
+          <Button variant="destructive" onClick={handleDeleteBook} disabled={loading}>
+            {loading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Deleting...
+              </>
+            ) : (
+              <>Delete Book</>
+            )}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+export default BookManagement;

@@ -158,7 +158,7 @@ const LibrarianDashboard = () => {
 
             <div className="flex flex-wrap gap-3">
               <Button className="gap-2" size="sm" asChild>
-                <Link to="/add-books">
+                <Link to="/book-management">
                   <Book size={16} /> Manage Catalog
                 </Link>
               </Button>
@@ -167,8 +167,10 @@ const LibrarianDashboard = () => {
                   <Calendar size={16} /> Room Management
                 </Link>
               </Button>
-              <Button className="gap-2" size="sm" variant="outline">
-                <Users size={16} /> Member Management
+              <Button className="gap-2" size="sm" variant="outline" asChild>
+                <Link to="/member-management">
+                  <Users size={16} /> Member Management
+                </Link>
               </Button>
             </div>
           </div>

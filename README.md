@@ -1,73 +1,140 @@
-# Welcome to your Lovable project
+# 📚 TownBook - Library Management System
 
-## Project info
+## 🌟 Overview
 
-**URL**: https://lovable.dev/projects/fc1019c2-adae-4ebb-98fb-b9b900b9abbc
+TownBook is a comprehensive library management system designed to streamline the operations of modern libraries. The platform offers separate interfaces for librarians and members, enabling efficient management of books, rooms, reservations, and user accounts.
 
-## How can I edit this code?
+## 🚀 Features
 
-There are several ways of editing your application.
+### 📖 Book Management
+- Complete book catalog with detailed information (title, author, description, etc.)
+- Book availability tracking and management
+- Add, edit, and delete books from the library collection
+- Book reservation system for members
 
-**Use Lovable**
+### 🏢 Room Management
+- Room reservation system for study spaces and meeting rooms
+- Availability calendar with time slot selection
+- Room details including capacity, amenities, and location
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/fc1019c2-adae-4ebb-98fb-b9b900b9abbc) and start prompting.
+### 👥 User Management
+- Member registration and profile management
+- Librarian administrative controls
+- Role-based access control
+- Authentication system with secure login
 
-Changes made via Lovable will be committed automatically to this repo.
+### 📅 Reservation System
+- Book reservation workflow
+- Room booking with date and time selection
+- Reservation history tracking
+- Approval queue for librarians
 
-**Use your preferred IDE**
+### 📊 Dashboard & Analytics
+- Member dashboard with current and past reservations
+- Librarian dashboard with system overview
+- Activity feed showing recent actions
+- Usage statistics and reports
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+## 🛠️ Technology Stack
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+### Frontend
+- **React**: UI library for building the user interface
+- **TypeScript**: For type-safe code
+- **React Router**: For navigation and routing
+- **Tailwind CSS**: For styling and responsive design
+- **shadcn/ui**: For UI components and design system
+- **Lucide React**: For icons
+- **date-fns**: For date manipulation
+- **React Hook Form**: For form handling
+- **Zod**: For form validation
 
-Follow these steps:
+### Backend & Data
+- **Supabase**: For database, authentication, and storage
+  - PostgreSQL database
+  - Authentication services
+  - Storage for images and files
+
+### Development Tools
+- **Vite**: For fast development and building
+- **ESLint**: For code linting
+- **TypeScript**: For static type checking
+
+## 📋 Database Structure
+
+The application uses Supabase with the following main tables:
+
+- **books**: Stores book information (title, author, description, etc.)
+- **book_copies**: Tracks individual copies of books and their status
+- **rooms**: Contains room information (name, capacity, amenities, etc.)
+- **room_availability**: Manages room availability schedules
+- **reservations**: Records book and room reservations
+- **profiles**: Stores user profile information
+- **activities**: Logs user activities for the activity feed
+
+## 🔧 Installation & Setup
 
 ```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+# Clone the repository
+git clone <repository-url>
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+# Navigate to the project directory
+cd townbook
 
-# Step 3: Install the necessary dependencies.
-npm i
+# Install dependencies
+npm install
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+# Start the development server
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+## 🔒 Environment Configuration
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+Create a `.env` file in the root directory with the following variables:
 
-**Use GitHub Codespaces**
+```
+VITE_SUPABASE_URL=your_supabase_url
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+```
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## 🏗️ Project Structure
 
-## What technologies are used for this project?
+```
+src/
+├── components/       # Reusable UI components
+├── contexts/         # React contexts (Auth, Theme)
+├── integrations/     # External service integrations (Supabase)
+├── pages/            # Application pages
+├── types/            # TypeScript type definitions
+├── utils/            # Utility functions
+└── App.tsx           # Main application component
+```
 
-This project is built with:
+## 👨‍💻 Development Workflow
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+1. **Feature Development**: Create a new branch for each feature
+2. **Testing**: Test the feature thoroughly
+3. **Pull Request**: Create a PR for code review
+4. **Merge**: After approval, merge to the main branch
 
-## How can I deploy this project?
+## 🚢 Deployment
 
-Simply open [Lovable](https://lovable.dev/projects/fc1019c2-adae-4ebb-98fb-b9b900b9abbc) and click on Share -> Publish.
+The application can be deployed using various platforms:
 
-## Can I connect a custom domain to my Lovable project?
+1. **Build the application**:
+   ```
+   npm run build
+   ```
 
-Yes, you can!
+2. **Deploy the `dist` folder** to your preferred hosting service
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+## 📝 License
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## 🤝 Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+---
+
+Developed with ❤️ by the TownBook team

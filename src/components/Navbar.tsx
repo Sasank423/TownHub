@@ -76,11 +76,11 @@ export const Navbar: React.FC = () => {
                 </Link>
                 {user?.role === 'librarian' ? (
                   <Link 
-                    to="/add-books" 
+                    to="/book-management" 
                     className="text-foreground hover:text-primary transition-colors flex items-center gap-1"
                   >
                     <BookOpen className="h-4 w-4" />
-                    <span>Add Books</span>
+                    <span>Manage Books</span>
                   </Link>
                 ) : (
                   <Link 
