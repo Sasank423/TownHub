@@ -1,9 +1,10 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { Bell, BookOpen, Calendar, BarChart2, FileText, LogOut, Search, User, Settings } from 'lucide-react';
+import { Bell, BookOpen, Calendar, BarChart2, FileText, LogOut, Search, User, Settings, History, ClipboardList } from 'lucide-react';
 import { NotificationCenter } from './NotificationCenter';
 import { ThemeToggle } from './ThemeToggle';
+import { useTranslation } from '../i18n';
 import { 
   DropdownMenu,
   DropdownMenuContent,
@@ -15,6 +16,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 export const Navbar: React.FC = () => {
   const { user, logout } = useAuth();
+  const { t, isAuthPage } = useTranslation();
   const [showNotifications, setShowNotifications] = React.useState(false);
   const [unreadNotifications, setUnreadNotifications] = React.useState(0);
   
@@ -88,18 +90,23 @@ export const Navbar: React.FC = () => {
                     className="text-foreground hover:text-primary transition-colors flex items-center gap-1"
                   >
                     <BookOpen className="h-4 w-4" />
-                    <span>Browse Books</span>
+                    <span>{t('navbar.catalog')}</span>
                   </Link>
                 )}
                 <Link to={user?.role === 'librarian' ? "/room-management" : "/rooms"} className="text-foreground hover:text-primary transition-colors flex items-center gap-1">
                   <Calendar className="h-4 w-4" />
-                  <span>Rooms</span>
+                  <span>{t('navbar.rooms')}</span>
                 </Link>
-                {user?.role !== 'librarian' && (
+                {user?.role === 'librarian' ? (
+                  <Link to="/activity-logs" className="text-foreground hover:text-primary transition-colors flex items-center gap-1">
+                    <ClipboardList className="h-4 w-4" />
+                    <span>{t('navbar.activityLogs')}</span>
+                  </Link>
+                ) : (
                   <>
                     <Link to="/report-issue" className="text-foreground hover:text-primary transition-colors flex items-center gap-1">
                       <FileText className="h-4 w-4" />
-                      <span>Report Issue</span>
+                      <span>{t('navbar.reportIssue')}</span>
                     </Link>
                   </>
                 )}
@@ -160,31 +167,25 @@ export const Navbar: React.FC = () => {
                   <DropdownMenuItem asChild>
                     <Link to="/profile" className="flex items-center space-x-2">
                       <User size={16} />
-                      <span>Profile</span>
+                      <span>{t('navbar.profile')}</span>
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
-                    <Link to="/reservations" className="flex items-center space-x-2">
-                      <BookOpen size={16} />
-                      <span>My Reservations</span>
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link to="/calendar" className="flex items-center space-x-2">
-                      <Calendar size={16} />
-                      <span>Calendar</span>
+                    <Link to="/user-history" className="flex items-center space-x-2">
+                      <History size={16} />
+                      <span>{t('navbar.myHistory')}</span>
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
                     <Link to="/settings" className="flex items-center space-x-2">
                       <Settings size={16} />
-                      <span>Settings</span>
+                      <span>{t('navbar.settings')}</span>
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem className="text-destructive" onClick={logout}>
                     <div className="flex items-center space-x-2">
                       <LogOut size={16} />
-                      <span>Logout</span>
+                      <span>{t('navbar.logout')}</span>
                     </div>
                   </DropdownMenuItem>
                 </DropdownMenuContent>

@@ -27,6 +27,9 @@ import RoomManagement from "./pages/RoomManagement";
 import ActiveReservations from "./pages/ActiveReservations";
 import MemberManagement from "./pages/MemberManagement";
 import BookManagement from "./pages/BookManagement";
+import ActivityLogs from './pages/ActivityLogs';
+import UserHistory from './pages/UserHistory';
+import Settings from './pages/Settings';
 
 const queryClient = new QueryClient();
 
@@ -92,8 +95,17 @@ const AppRoutes = () => {
         {/* Profile route */}
         <Route path="/profile" element={<ProtectedRoute element={<Profile />} />} />
         
+        {/* Settings route */}
+        <Route path="/settings" element={<ProtectedRoute element={<Settings />} />} />
+        
         {/* Report issue route */}
         <Route path="/report-issue" element={<ProtectedRoute element={<ReportIssue />} />} />
+        
+        {/* Activity logs route (librarian only) */}
+        <Route path="/activity-logs" element={<ProtectedRoute element={<ActivityLogs />} requiredRole="librarian" />} />
+        
+        {/* User history route (member only) */}
+        <Route path="/user-history" element={<ProtectedRoute element={<UserHistory />} requiredRole="member" />} />
         
         {/* Catch-all route */}
         <Route path="*" element={<NotFound />} />
@@ -102,17 +114,22 @@ const AppRoutes = () => {
   );
 };
 
+// Import the I18nProvider
+import { I18nProvider } from './i18n';
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <ThemeProvider>
-        <BrowserRouter>
-          <AuthProvider>
-            <Toaster />
-            <Sonner />
-            <AppRoutes />
-          </AuthProvider>
-        </BrowserRouter>
+        <I18nProvider>
+          <BrowserRouter>
+            <AuthProvider>
+              <Toaster />
+              <Sonner />
+              <AppRoutes />
+            </AuthProvider>
+          </BrowserRouter>
+        </I18nProvider>
       </ThemeProvider>
     </TooltipProvider>
   </QueryClientProvider>
